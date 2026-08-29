@@ -1,0 +1,142 @@
+.environments-page {
+  max-width: 1100px;
+}
+
+.environments-page .page-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.environments-page .header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.env-help {
+  display: flex;
+  gap: 12px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  align-items: flex-start;
+}
+
+.env-help svg {
+  color: var(--info);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.env-help ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.env-help li + li {
+  margin-top: 4px;
+}
+
+.env-help strong {
+  color: var(--text-primary);
+}
+
+.env-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.env-card {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.env-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.env-updated {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.env-fields {
+  margin: 0;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.env-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.env-field dt {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.env-field dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.env-card .action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  align-self: flex-start;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.env-card .action-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.env-readonly-note {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.env-reset-row {
+  margin-top: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}

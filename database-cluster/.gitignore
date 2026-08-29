@@ -1,0 +1,31 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# PostgreSQL data directories
+master-data/
+slave1-data/
+slave2-data/
+
+# pgAdmin data
+pgadmin-data/
+
+# Backup data
+backup-data/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

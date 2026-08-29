@@ -1,0 +1,28 @@
+# Build artifacts
+bin/
+vps-dashboard-api
+*.exe
+
+# Local data (SQLite, backups) — JANGAN ikut ke image
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# Local env
+.env
+.env.local
+
+# Test cache
+*.test
+*.out
+coverage.out
+
+# Editor/OS
+.DS_Store
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore

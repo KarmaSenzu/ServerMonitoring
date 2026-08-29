@@ -1,0 +1,28 @@
+# Build outputs (akan di-build di dalam image)
+dist/
+node_modules/
+
+# Local env (jangan masuk ke image)
+.env
+.env.local
+.env.*.local
+
+# Editor/OS
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test
+coverage/
+.nyc_output/

@@ -1,0 +1,18 @@
+# Cloudflare Tunnel — credentials-based (file-based) config.
+#
+# Dipakai oleh container `cloudflared` (lihat docker-compose.yml service
+# `cloudflared`). File ini di-bind-mount read-only ke /etc/cloudflared.
+#
+# Mode credentials-file dipilih (bukan TUNNEL_TOKEN) supaya ingress rules
+# di bawah ini yang dipakai (token-based tunnel mengambil ingress dari
+# Cloudflare dashboard remote, yang di setup awal masih kosong → 503).
+
+tunnel: f6eeebfd-8e8d-4021-8a3a-8b8a76a98182
+credentials-file: /etc/cloudflared/credentials.json
+
+# Routing: server-dmr.devplay.online → frontend nginx (service `web` di
+# network server-dmr-net, port 80). Semua hostname lain ditolak 404.
+ingress:
+  - hostname: server-dmr.devplay.online
+    service: http://web:80
+  - service: http_status:404

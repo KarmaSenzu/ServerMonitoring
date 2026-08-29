@@ -1,0 +1,227 @@
+.pm2-page {
+  max-width: 1280px;
+}
+
+.auto-refresh-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: var(--glass-bg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.auto-refresh-toggle input {
+  accent-color: var(--accent);
+}
+
+.pm2-table {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+}
+
+.pm2-table-row {
+  display: grid;
+  grid-template-columns:
+    minmax(200px, 1.6fr)
+    100px
+    80px
+    90px
+    70px
+    100px
+    80px
+    minmax(280px, 1.2fr);
+  gap: 12px;
+  padding: 14px 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+}
+
+.pm2-table-row:last-child {
+  border-bottom: none;
+}
+
+.pm2-table-head {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.pm2-actions-head {
+  text-align: right;
+}
+
+.pm2-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pm2-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm2-script,
+.pm2-cwd {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pm2-mono {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pm2-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pm2-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pm2-status.online {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.pm2-status.online .pm2-status-dot {
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+}
+
+.pm2-status.stopped {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+}
+
+.pm2-status.stopped .pm2-status-dot {
+  background: #94a3b8;
+}
+
+.pm2-status.errored {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.pm2-status.errored .pm2-status-dot {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+}
+
+.pm2-status.other {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.pm2-status.other .pm2-status-dot {
+  background: var(--warning);
+}
+
+.pm2-actions-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.pm2-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+.pm2-action-btn:hover:not(:disabled) {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
+.pm2-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pm2-action-btn.start:hover:not(:disabled) {
+  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--success);
+  background: var(--success-bg);
+}
+
+.pm2-action-btn.stop:hover:not(:disabled) {
+  border-color: rgba(255, 82, 82, 0.3);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.pm2-action-btn.restart:hover:not(:disabled),
+.pm2-action-btn.reload:hover:not(:disabled) {
+  border-color: rgba(64, 196, 255, 0.3);
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+.pm2-action-btn.danger:hover:not(:disabled) {
+  border-color: rgba(255, 82, 82, 0.4);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.modal-mono {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+@media (max-width: 1024px) {
+  .pm2-table-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+  .pm2-table-head {
+    display: none;
+  }
+  .pm2-actions-cell {
+    justify-content: flex-start;
+  }
+}

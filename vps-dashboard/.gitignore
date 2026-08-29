@@ -1,0 +1,40 @@
+# Local deploy config — never commit
+deploy.env
+.env
+.env.docker
+.env.local
+*.env.local
+
+# Cloudflare Tunnel credentials (per-host secret). config.yml boleh ikut.
+cloudflared-config/credentials.json
+cloudflared-config/*.json
+
+# SQLite databases (local dev / backend-go state)
+*.db
+*.db-wal
+*.db-shm
+
+# Backend-go data dir (SQLite + backup snapshots)
+backend-go/data/
+data/
+
+# Frontend build output
+frontend/dist/
+frontend/node_modules/
+
+# Backend Go build artifacts
+backend-go/bin/
+backend-go/vps-dashboard-api
+backend-go/*.exe
+
+# Legacy Node backend (kept for reference, not deployed)
+legacy/**/node_modules/
+
+# Editor / OS metadata
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Docker volumes (when bind-mounted to ./data)
+docker-data/

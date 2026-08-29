@@ -1,0 +1,22 @@
+# env
+.env
+.env.local
+
+# sqlite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+data/
+
+# build artifacts
+vps-dashboard-api
+/vps-dashboard-api
+bin/
+tmp/
+
+# editor
+.vscode/
+.idea/
+*.swp
+.DS_Store

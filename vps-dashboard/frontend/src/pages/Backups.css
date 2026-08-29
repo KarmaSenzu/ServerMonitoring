@@ -1,0 +1,199 @@
+.backups-page {
+  max-width: 1200px;
+}
+
+.backups-page .page-header-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.backups-page .header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.backups-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.backups-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.backups-table th,
+.backups-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--glass-border);
+  vertical-align: middle;
+}
+
+.backups-table th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.backups-actions-col {
+  text-align: right;
+}
+
+.backups-row td {
+  color: var(--text-primary);
+}
+
+.backups-trigger {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.backups-path {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 360px;
+}
+
+.backups-path-text {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 280px;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  color: var(--accent);
+  background: var(--glass-bg-hover);
+}
+
+.backup-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.backup-status.ok {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.backup-status.fail {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.backup-error {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--danger);
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.backups-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.backups-actions .action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.backups-actions .action-btn:hover:not(.disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.backups-actions .action-btn.danger:hover:not(.disabled) {
+  border-color: rgba(255, 82, 82, 0.4);
+  color: var(--danger);
+  background: var(--danger-bg);
+}
+
+.backups-actions .action-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+@media (max-width: 768px) {
+  .backups-table thead {
+    display: none;
+  }
+  .backups-table,
+  .backups-table tbody,
+  .backups-table tr,
+  .backups-table td {
+    display: block;
+    width: 100%;
+  }
+  .backups-table tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px 12px;
+  }
+  .backups-table td {
+    border: none;
+    padding: 6px 0;
+  }
+  .backups-actions {
+    justify-content: flex-start;
+  }
+}

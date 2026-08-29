@@ -1,0 +1,6 @@
+tunnel: server-dmr
+credentials-file: /root/.cloudflared/credentials.json
+ingress:
+  - hostname: server-dmr.devplay.online
+    service: http://172.19.0.4:80
+  - service: http_status:404

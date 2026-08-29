@@ -1,0 +1,269 @@
+.tunnel-card {
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.tunnel-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.tunnel-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.tunnel-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tunnel-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.tunnel-card-icon.active {
+  background: var(--info-bg);
+  color: var(--info);
+  box-shadow: 0 0 12px rgba(64, 196, 255, 0.2);
+}
+
+.tunnel-card-icon.inactive {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.tunnel-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  text-transform: capitalize;
+}
+
+.tunnel-card-id {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.tunnel-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tunnel-status-badge.running {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.tunnel-status-badge.stopped,
+.tunnel-status-badge.inactive {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.tunnel-status-badge.unknown {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+/* Details */
+.tunnel-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.tunnel-detail-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.tunnel-detail-row svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.tunnel-detail-label {
+  color: var(--text-muted);
+  min-width: 55px;
+}
+
+.tunnel-detail-value {
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+/* Routes */
+.tunnel-routes {
+  border-top: 1px solid var(--glass-border);
+  padding-top: 14px;
+}
+
+.tunnel-routes-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tunnel-routes-header svg {
+  color: var(--info);
+}
+
+.route-count {
+  background: var(--info-bg);
+  color: var(--info);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 8px;
+}
+
+.tunnel-routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tunnel-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  border-left: 3px solid var(--info);
+  font-size: 12px;
+}
+
+.tunnel-route.catchall {
+  border-left-color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.route-hostname {
+  color: var(--info);
+  font-weight: 500;
+  flex: 1;
+  word-break: break-all;
+}
+
+.tunnel-route.catchall .route-hostname {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.route-arrow {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.route-service {
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 11px;
+}
+
+.tunnel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tunnel-streams-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tunnel-latency-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.4px;
+  text-transform: none;
+}
+
+.tunnel-latency-badge.good {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.tunnel-latency-badge.mid {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.tunnel-latency-badge.bad {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.tunnel-latency-badge.na {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+}
+
+.tunnel-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.tunnel-action-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.18s ease;
+}
+
+.tunnel-action-btn:hover:not(:disabled) {
+  border-color: rgba(64, 196, 255, 0.3);
+  color: var(--info);
+  background: var(--info-bg);
+}
+
+.tunnel-action-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

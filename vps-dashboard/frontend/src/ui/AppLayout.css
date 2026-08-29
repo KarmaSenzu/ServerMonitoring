@@ -1,0 +1,116 @@
+.sidebar-footer {
+  margin-top: auto;
+  padding: 14px 12px 8px;
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  color: white;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.auth-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-username {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover {
+  border-color: rgba(255, 82, 82, 0.3);
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+/* Forbidden panel */
+.forbidden {
+  max-width: 420px;
+  margin: 60px auto;
+  padding: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.forbidden svg {
+  color: var(--danger);
+}
+
+.forbidden h2 {
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.forbidden p {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.forbidden-link {
+  margin-top: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.route-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+  color: var(--text-muted);
+}
+
+.route-loading .spinning {
+  color: var(--accent);
+}

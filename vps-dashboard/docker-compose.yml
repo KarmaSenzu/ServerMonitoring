@@ -1,0 +1,188 @@
+# Monitoring dashboard stack — WSL2/Linux deployment.
+#
+# Services:
+#   api          — backend Go (auth, metrics collector, alerts, notifier)
+#   web          — nginx serve frontend SPA + reverse-proxy ke api
+#   dockerproxy  — restricted Docker socket proxy (read-only by default)
+#   cloudflared  — Cloudflare Tunnel; gateway publik ke web container
+#
+# Lihat .env.docker.example untuk daftar env var yang harus diisi sebelum
+# `docker compose up -d`.
+
+name: server-dmr
+
+services:
+  api:
+    build:
+      context: ./backend-go
+      dockerfile: Dockerfile
+    image: server-dmr-api:latest
+    container_name: server-dmr-api
+    restart: unless-stopped
+    networks: [server-dmr-net]
+    ports:
+      - "3001:3001"
+    expose:
+      - "3001"
+    environment:
+      ENV: production
+      HTTP_ADDR: ":3001"
+      DB_PATH: /data/vps-dashboard.db
+      BACKUP_DIR: /data/backups
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TZ: ${TZ:-Asia/Jakarta}
+      # Auth
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET wajib di-set di .env}
+      JWT_TTL: ${JWT_TTL:-2h}
+      BOOTSTRAP_ADMIN_USERNAME: ${BOOTSTRAP_ADMIN_USERNAME:-admin}
+      BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      # CORS — domain publik (lewat tunnel)
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://server-dmr.devplay.online}
+      # Retention & cadence
+      EVENTS_RETENTION: ${EVENTS_RETENTION:-720h}
+      HEALTH_RETENTION: ${HEALTH_RETENTION:-336h}
+      HEALTHCHECK_INTERVAL: ${HEALTHCHECK_INTERVAL:-60s}
+      SYSTEM_TICK_INTERVAL: ${SYSTEM_TICK_INTERVAL:-30s}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_HOUR_LOCAL: ${BACKUP_HOUR_LOCAL:-3}
+      # gopsutil — baca metrik dari host yang di-mount, bukan dari container
+      HOST_PROC: /host/proc
+      HOST_SYS: /host/sys
+      HOST_ETC: /host/etc
+      # Path container untuk membaca disk usage host. Default "/host" mengikuti
+      # bind-mount `/:/host:ro` di bawah; kalau host root tidak di-mount,
+      # backend otomatis fallback ke "/" (rootfs container).
+      SYSTEM_ROOT_PATH: ${SYSTEM_ROOT_PATH:-/host}
+      # Docker proxy: backend-go pakai DOCKER_HOST untuk hit dockerproxy
+      DOCKER_HOST: tcp://dockerproxy:2375
+      # PM2 hybrid: client di container baca daemon socket di host via mount.
+      # Path target di container fix di /home/app/.pm2 (lihat Dockerfile).
+      # Path source di host bisa di-override via PM2_HOME di .env (default /root/.pm2).
+      PM2_HOME: /home/app/.pm2
+    volumes:
+      # Persistensi DB + backup
+      - ./data:/data
+      # Akses metrik host (read-only)
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc:/host/etc:ro
+      # Host root untuk disk usage host (bukan rootfs container).
+      - /:/host:ro
+      # PM2 daemon socket dari host. Default WSL2 root user: /root/.pm2.
+      # Override di .env (PM2_HOME=...) kalau PM2 di host pakai user lain.
+      # NOT read-only — PM2 client perlu write ke socket.
+      # NOTE: socket dibuat oleh user yang menjalankan PM2 di host (umumnya UID 0).
+      # Container API jalan sebagai user `app` (UID 1000) → tidak akan bisa
+      # baca/write socket UID-0. Workaround: jalankan PM2 di host sebagai UID 1000,
+      # atau ubah USER di Dockerfile ke root (kurang aman).
+      - ${PM2_HOME:-/root/.pm2}:/home/app/.pm2
+      # Cloudflared configs untuk dashboard tunnel listing.
+      # Setiap project folder di-mount ke subdirectory unik di /etc/cloudflared.
+      # Backend tunnel.go scan rekursif untuk dapatkan semua tunnel terdaftar.
+      - ./cloudflared-config:/etc/cloudflared/server-dmr:ro
+      - "../../Dmr x - Ai/cloudflared-config:/etc/cloudflared/dmrxai:ro"
+      - "../../PORTOFOLIO DAMAR/cloudflared-config:/etc/cloudflared/profildmr:ro"
+    depends_on:
+      dockerproxy:
+        condition: service_started
+    # Container API tidak butuh capability tambahan; tetap drop-all
+    cap_drop:
+      - ALL
+    cap_add:
+      - DAC_READ_SEARCH  # untuk baca /host/proc, /host/sys read-only
+    security_opt:
+      - no-new-privileges:true
+    read_only: false  # backend perlu write ke /data; bisa diketatkan dengan tmpfs nanti
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: server-dmr-web:latest
+    container_name: server-dmr-web
+    restart: unless-stopped
+    networks: [server-dmr-net]
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: server-dmr-docker-proxy
+    restart: unless-stopped
+    networks: [server-dmr-net]
+    expose:
+      - "2375"
+    environment:
+      # Default: hanya GET (read-only). Aktifkan endpoint lain seinginnya.
+      CONTAINERS: 1   # GET /containers/* (list, inspect)
+      IMAGES: 1
+      INFO: 1
+      NETWORKS: 1
+      VOLUMES: 1
+      VERSION: 1
+      # POST = bisa control container. Set 1 hanya kalau dashboard butuh
+      # tombol start/stop. Default 0 = read-only.
+      POST: ${DOCKERPROXY_POST:-0}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: server-dmr-tunnel
+    restart: unless-stopped
+    # Harus join server-dmr-net supaya bisa resolve DNS name `web` (frontend
+    # nginx) — service yang dirujuk di cloudflared-config/config.yml.
+    networks: [server-dmr-net]
+    # Credentials-based tunnel (bukan TUNNEL_TOKEN). Konfigurasi ingress
+    # diambil dari cloudflared-config/config.yml di-mount read-only.
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflared-config:/etc/cloudflared:ro
+    depends_on:
+      - web
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  server-dmr-net:
+    name: server-dmr-net
+    driver: bridge

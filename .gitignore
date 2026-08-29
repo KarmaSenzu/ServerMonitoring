@@ -1,0 +1,106 @@
+# ============================================
+# MONITORING SERVER - Root .gitignore
+# ============================================
+
+# -------------------- SENSITIVE FILES --------------------
+# Environment variables and credentials (NEVER COMMIT)
+.env
+.env.local
+.env.*.local
+.env.docker
+deploy.env
+
+# Cloudflare Tunnel credentials (per-host secrets)
+**/cloudflared-config/credentials.json
+**/cloudflared-config/*.json
+!**/cloudflared-config/config.yml
+
+# -------------------- DATABASES & DATA --------------------
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# PostgreSQL data directories
+database-cluster/master-data/
+database-cluster/slave1-data/
+database-cluster/slave2-data/
+database-cluster/pgadmin-data/
+database-cluster/backup-data/
+
+# Runtime data directories
+data/
+**/data/
+backend-go/data/
+docker-data/
+
+# -------------------- BUILD ARTIFACTS --------------------
+# Frontend (Node/React/Vite)
+node_modules/
+**/node_modules/
+dist/
+dist-ssr/
+**/dist/
+frontend/dist/
+*.local
+
+# Backend Go
+bin/
+**/bin/
+vps-dashboard-api
+**/vps-dashboard-api
+*.exe
+backend-go/vps-dashboard-api
+backend-go/*.exe
+tmp/
+
+# -------------------- LOGS --------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Playwright MCP logs
+.playwright-mcp/
+
+# -------------------- OS & EDITOR FILES --------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+desktop.ini
+
+# Linux
+*~
+.directory
+
+# IDEs
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# -------------------- DOCKER --------------------
+# Docker volumes when bind-mounted locally
+docker-data/
+
+# -------------------- BACKUP FILES --------------------
+**/backups/*.db
+**/backups/*.sql
+**/_pre-reset-backup/

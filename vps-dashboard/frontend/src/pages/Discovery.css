@@ -1,0 +1,254 @@
+.discovery-page {
+  max-width: 1200px;
+}
+
+.discovery-counts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.count-card {
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+}
+
+.count-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.count-card.tone-docker .count-icon {
+  background: var(--badge-source-docker-bg);
+  color: var(--badge-source-docker);
+}
+.count-card.tone-pm2 .count-icon {
+  background: var(--badge-source-pm2-bg);
+  color: var(--badge-source-pm2);
+}
+.count-card.tone-tunnel .count-icon {
+  background: var(--badge-source-tunnel-bg);
+  color: var(--badge-source-tunnel);
+}
+
+.count-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.count-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.count-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.count-error {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Candidates */
+.candidates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.candidate-card {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.candidate-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.candidate-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.candidate-title h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.candidate-sources {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.source-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 8px;
+}
+
+.source-docker {
+  background: var(--badge-source-docker-bg);
+  color: var(--badge-source-docker);
+}
+
+.source-pm2 {
+  background: var(--badge-source-pm2-bg);
+  color: var(--badge-source-pm2);
+}
+
+.source-tunnel {
+  background: var(--badge-source-tunnel-bg);
+  color: var(--badge-source-tunnel);
+}
+
+.adopted-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
+}
+
+.adopted-link {
+  margin-left: 6px;
+  color: var(--accent-light);
+  font-weight: 500;
+}
+
+.primary-btn.small {
+  padding: 7px 14px;
+  font-size: 12px;
+}
+
+.candidate-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.meta-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.meta-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.meta-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  word-break: break-all;
+}
+
+.candidate-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.candidate-reason {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.confidence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.confidence-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  min-width: 70px;
+}
+
+.confidence-bar {
+  flex: 1;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-light));
+  border-radius: 3px;
+  transition: width 0.5s ease;
+}
+
+.confidence-value {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  min-width: 24px;
+  text-align: right;
+}
+
+@media (max-width: 768px) {
+  .candidate-head {
+    flex-direction: column;
+  }
+}

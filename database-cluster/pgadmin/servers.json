@@ -1,0 +1,76 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "DB Cluster - Master (Write)",
+      "Group": "Database Cluster",
+      "Host": "db-master",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Primary database - ALL WRITES go here",
+      "BGColor": "#e74c3c",
+      "FGColor": "#ffffff"
+    },
+    "2": {
+      "Name": "DB Cluster - Slave 1 (Read)",
+      "Group": "Database Cluster",
+      "Host": "db-slave-1",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Read replica 1 - READ ONLY",
+      "BGColor": "#3498db",
+      "FGColor": "#ffffff"
+    },
+    "3": {
+      "Name": "DB Cluster - Slave 2 (Read)",
+      "Group": "Database Cluster",
+      "Host": "db-slave-2",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Read replica 2 - READ ONLY",
+      "BGColor": "#3498db",
+      "FGColor": "#ffffff"
+    },
+    "4": {
+      "Name": "Master via Host (External)",
+      "Group": "External Access",
+      "Host": "localhost",
+      "Port": 5432,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Access master dari luar Docker network",
+      "BGColor": "#95a5a6",
+      "FGColor": "#ffffff"
+    },
+    "5": {
+      "Name": "Slave 1 via Host (External)",
+      "Group": "External Access",
+      "Host": "localhost",
+      "Port": 5433,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Access slave 1 dari luar Docker network",
+      "BGColor": "#95a5a6",
+      "FGColor": "#ffffff"
+    },
+    "6": {
+      "Name": "Slave 2 via Host (External)",
+      "Group": "External Access",
+      "Host": "localhost",
+      "Port": 5434,
+      "MaintenanceDB": "postgres",
+      "Username": "dbadmin",
+      "SSLMode": "prefer",
+      "Comment": "Access slave 2 dari luar Docker network",
+      "BGColor": "#95a5a6",
+      "FGColor": "#ffffff"
+    }
+  }
+}

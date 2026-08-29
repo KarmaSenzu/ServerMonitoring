@@ -1,0 +1,278 @@
+# PostgreSQL Master-Slave Cluster dengan TimescaleDB
+# Database Pusat untuk Multiple Systems
+#
+# Services:
+#   db-master      — PostgreSQL 16 + TimescaleDB (PRIMARY/WRITE)
+#   db-slave-1     — PostgreSQL 16 + TimescaleDB (REPLICA/READ)
+#   db-slave-2     — PostgreSQL 16 + TimescaleDB (REPLICA/READ)
+#   pgadmin        — pgAdmin 4 Web UI untuk management
+#   db-backup      — Automated backup service (pg_dump scheduler)
+#
+# Network:
+#   db-cluster-net — Internal network untuk komunikasi antar container
+#
+# Volumes:
+#   master-data    — Data persistence untuk master
+#   slave1-data    — Data persistence untuk slave 1
+#   slave2-data    — Data persistence untuk slave 2
+#   pgadmin-data   — pgAdmin configuration & saved connections
+#   backup-data    — Backup storage
+
+name: database-cluster
+
+services:
+  # =============================================================================
+  # MASTER DATABASE — Primary (Write + Read)
+  # =============================================================================
+  db-master:
+    image: timescale/timescaledb:latest-pg16
+    container_name: db-cluster-master
+    restart: unless-stopped
+    networks:
+      - db-cluster-net
+    ports:
+      - "${DB_MASTER_PORT:-5432}:5432"
+    environment:
+      # PostgreSQL Authentication
+      POSTGRES_USER: ${POSTGRES_USER:-dbadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD harus di-set di .env}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      
+      # Replication Configuration
+      POSTGRES_REPLICATION_USER: ${REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?REPLICATION_PASSWORD harus di-set}
+      
+      # Performance Tuning
+      POSTGRES_SHARED_BUFFERS: ${SHARED_BUFFERS:-256MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${EFFECTIVE_CACHE_SIZE:-1GB}
+      POSTGRES_WORK_MEM: ${WORK_MEM:-16MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${MAINTENANCE_WORK_MEM:-128MB}
+      
+      # Timezone & Locale
+      TZ: ${TZ:-Asia/Jakarta}
+      PGTZ: ${TZ:-Asia/Jakarta}
+    
+    volumes:
+      # Data persistence
+      - master-data:/var/lib/postgresql/data
+      
+      # Initialization scripts (run once on first start)
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      
+      # Custom postgresql.conf overrides
+      - ./config/master-postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      
+    command: 
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dbadmin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # SLAVE DATABASE 1 — Read Replica
+  # =============================================================================
+  db-slave-1:
+    image: timescale/timescaledb:latest-pg16
+    container_name: db-cluster-slave-1
+    restart: unless-stopped
+    networks:
+      - db-cluster-net
+    ports:
+      - "${DB_SLAVE1_PORT:-5433}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dbadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      
+      # Replication
+      POSTGRES_MASTER_HOST: db-master
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_REPLICATION_USER: ${REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+      
+      TZ: ${TZ:-Asia/Jakarta}
+      PGTZ: ${TZ:-Asia/Jakarta}
+    
+    volumes:
+      - slave1-data:/var/lib/postgresql/data
+      - ./config/slave-postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./scripts/setup-slave.sh:/docker-entrypoint-initdb.d/setup-slave.sh:ro
+    
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+    
+    depends_on:
+      db-master:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dbadmin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # SLAVE DATABASE 2 — Read Replica
+  # =============================================================================
+  db-slave-2:
+    image: timescale/timescaledb:latest-pg16
+    container_name: db-cluster-slave-2
+    restart: unless-stopped
+    networks:
+      - db-cluster-net
+    ports:
+      - "${DB_SLAVE2_PORT:-5434}:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dbadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      
+      # Replication
+      POSTGRES_MASTER_HOST: db-master
+      POSTGRES_MASTER_PORT: 5432
+      POSTGRES_REPLICATION_USER: ${REPLICATION_USER:-replicator}
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+      
+      TZ: ${TZ:-Asia/Jakarta}
+      PGTZ: ${TZ:-Asia/Jakarta}
+    
+    volumes:
+      - slave2-data:/var/lib/postgresql/data
+      - ./config/slave-postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./scripts/setup-slave.sh:/docker-entrypoint-initdb.d/setup-slave.sh:ro
+    
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+    
+    depends_on:
+      db-master:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dbadmin}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # PGADMIN — Web-based Database Management
+  # =============================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: db-cluster-pgadmin
+    restart: unless-stopped
+    networks:
+      - db-cluster-net
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@localhost}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:?PGADMIN_PASSWORD harus di-set}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+    
+    depends_on:
+      - db-master
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # =============================================================================
+  # BACKUP SERVICE — Automated pg_dump scheduler
+  # =============================================================================
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: db-cluster-backup
+    restart: unless-stopped
+    networks:
+      - db-cluster-net
+    environment:
+      POSTGRES_HOST: db-master
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-dbadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${BACKUP_DATABASES:-postgres}
+      
+      # Backup schedule (cron format)
+      SCHEDULE: ${BACKUP_SCHEDULE:-@daily}
+      
+      # Backup retention (in days)
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+      BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS:-4}
+      BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS:-6}
+      
+      # Compression
+      POSTGRES_EXTRA_OPTS: "-Z9 --schema=public --blobs"
+      
+      TZ: ${TZ:-Asia/Jakarta}
+    
+    volumes:
+      - backup-data:/backups
+    
+    depends_on:
+      db-master:
+        condition: service_healthy
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  db-cluster-net:
+    name: db-cluster-net
+    driver: bridge
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  master-data:
+    name: db-cluster-master-data
+  slave1-data:
+    name: db-cluster-slave1-data
+  slave2-data:
+    name: db-cluster-slave2-data
+  pgadmin-data:
+    name: db-cluster-pgadmin-data
+  backup-data:
+    name: db-cluster-backup-data

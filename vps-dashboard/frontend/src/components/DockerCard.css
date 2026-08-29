@@ -1,0 +1,169 @@
+.docker-card {
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.docker-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.docker-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.docker-card-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.docker-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  font-size: 18px;
+}
+
+.docker-card-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.docker-card-image {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.docker-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.docker-status-badge.running {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.docker-status-badge.exited {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.docker-status-badge.paused {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.docker-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.docker-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+}
+
+.action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-btn.start:hover:not(:disabled) {
+  background: var(--success-bg);
+  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--success);
+}
+
+.action-btn.stop:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: rgba(255, 82, 82, 0.3);
+  color: var(--danger);
+}
+
+.action-btn.restart:hover:not(:disabled) {
+  background: var(--info-bg);
+  border-color: rgba(64, 196, 255, 0.3);
+  color: var(--info);
+}
+
+.action-btn.logs:hover:not(:disabled) {
+  background: var(--accent-glow);
+  border-color: rgba(108, 99, 255, 0.3);
+  color: var(--accent-light);
+}
+
+.docker-project-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-light);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.docker-project-link:hover {
+  text-decoration: underline;
+}

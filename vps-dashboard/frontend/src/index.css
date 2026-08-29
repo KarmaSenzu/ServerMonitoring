@@ -1,0 +1,423 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg-primary: #0a0a1a;
+  --bg-secondary: #111128;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-bg-hover: rgba(255, 255, 255, 0.07);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-hover: rgba(255, 255, 255, 0.15);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --accent: #6c63ff;
+  --accent-light: #8b83ff;
+  --accent-glow: rgba(108, 99, 255, 0.25);
+  --success: #00e676;
+  --success-bg: rgba(0, 230, 118, 0.1);
+  --danger: #ff5252;
+  --danger-bg: rgba(255, 82, 82, 0.1);
+  --warning: #ffab40;
+  --warning-bg: rgba(255, 171, 64, 0.1);
+  --info: #40c4ff;
+  --info-bg: rgba(64, 196, 255, 0.1);
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888aa;
+  --text-muted: #555577;
+  --sidebar-width: 260px;
+
+  /* Role badges */
+  --badge-admin: #34d399;
+  --badge-admin-bg: rgba(52, 211, 153, 0.12);
+  --badge-viewer: #94a3b8;
+  --badge-viewer-bg: rgba(148, 163, 184, 0.12);
+
+  /* Discovery sources */
+  --badge-source-docker: #38bdf8;
+  --badge-source-docker-bg: rgba(56, 189, 248, 0.12);
+  --badge-source-pm2: #a78bfa;
+  --badge-source-pm2-bg: rgba(167, 139, 250, 0.14);
+  --badge-source-tunnel: #fb923c;
+  --badge-source-tunnel-bg: rgba(251, 146, 60, 0.12);
+
+  /* Charts */
+  --chart-cpu: #6c63ff;
+  --chart-mem: #00e676;
+  --chart-disk: #ab47bc;
+  --chart-net-rx: #40c4ff;
+  --chart-net-tx: #ffab40;
+
+  /* Severity badges (info|warning|error|critical) */
+  --sev-info: #40c4ff;
+  --sev-info-bg: rgba(64, 196, 255, 0.12);
+  --sev-info-border: rgba(64, 196, 255, 0.32);
+  --sev-warning: #ffab40;
+  --sev-warning-bg: rgba(255, 171, 64, 0.12);
+  --sev-warning-border: rgba(255, 171, 64, 0.32);
+  --sev-error: #ff5252;
+  --sev-error-bg: rgba(255, 82, 82, 0.12);
+  --sev-error-border: rgba(255, 82, 82, 0.32);
+  --sev-critical: #b71c1c;
+  --sev-critical-bg: rgba(183, 28, 28, 0.22);
+  --sev-critical-border: rgba(183, 28, 28, 0.55);
+
+  /* Channel type badges (telegram is the only type today) */
+  --channel-telegram: #29b6f6;
+  --channel-telegram-bg: rgba(41, 182, 246, 0.12);
+
+  /* Environment chips (development|staging|production) */
+  --env-development: #40c4ff;
+  --env-development-bg: rgba(64, 196, 255, 0.12);
+  --env-development-border: rgba(64, 196, 255, 0.32);
+  --env-staging: #ffab40;
+  --env-staging-bg: rgba(255, 171, 64, 0.12);
+  --env-staging-border: rgba(255, 171, 64, 0.32);
+  --env-production: #ff5252;
+  --env-production-bg: rgba(255, 82, 82, 0.12);
+  --env-production-border: rgba(255, 82, 82, 0.32);
+
+  /* Deployment status badges (pending|running|success|failed|timeout) */
+  --deploy-pending: #94a3b8;
+  --deploy-pending-bg: rgba(148, 163, 184, 0.14);
+  --deploy-pending-border: rgba(148, 163, 184, 0.34);
+  --deploy-running: #40c4ff;
+  --deploy-running-bg: rgba(64, 196, 255, 0.14);
+  --deploy-running-border: rgba(64, 196, 255, 0.34);
+  --deploy-success: #00e676;
+  --deploy-success-bg: rgba(0, 230, 118, 0.14);
+  --deploy-success-border: rgba(0, 230, 118, 0.34);
+  --deploy-failed: #ff5252;
+  --deploy-failed-bg: rgba(255, 82, 82, 0.14);
+  --deploy-failed-border: rgba(255, 82, 82, 0.34);
+  --deploy-timeout: #b71c1c;
+  --deploy-timeout-bg: rgba(183, 28, 28, 0.22);
+  --deploy-timeout-border: rgba(183, 28, 28, 0.55);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(circle at 20% 50%, rgba(108, 99, 255, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 230, 118, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(255, 82, 82, 0.03) 0%, transparent 50%);
+  z-index: -1;
+  animation: bgShift 25s ease-in-out infinite alternate;
+}
+
+@keyframes bgShift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-3%, -3%); }
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Glass card base */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s ease;
+}
+
+.glass:hover {
+  background: var(--glass-bg-hover);
+  border-color: var(--glass-border-hover);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Role badges */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.role-badge.role-admin {
+  background: var(--badge-admin-bg);
+  color: var(--badge-admin);
+}
+
+.role-badge.role-viewer {
+  background: var(--badge-viewer-bg);
+  color: var(--badge-viewer);
+}
+
+/* Severity badges */
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  width: fit-content;
+  border: 1px solid transparent;
+}
+
+.severity-badge.severity-sm {
+  font-size: 9px;
+  padding: 2px 6px;
+}
+
+.severity-badge.severity-info {
+  color: var(--sev-info);
+  background: var(--sev-info-bg);
+  border-color: var(--sev-info-border);
+}
+
+.severity-badge.severity-warning {
+  color: var(--sev-warning);
+  background: var(--sev-warning-bg);
+  border-color: var(--sev-warning-border);
+}
+
+.severity-badge.severity-error {
+  color: var(--sev-error);
+  background: var(--sev-error-bg);
+  border-color: var(--sev-error-border);
+}
+
+.severity-badge.severity-critical {
+  color: #fff;
+  background: var(--sev-critical-bg);
+  border-color: var(--sev-critical-border);
+}
+
+.severity-badge.severity-dot-only {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: currentColor;
+}
+
+.severity-badge.severity-dot-only.severity-info {
+  color: var(--sev-info);
+  background: var(--sev-info);
+}
+
+.severity-badge.severity-dot-only.severity-warning {
+  color: var(--sev-warning);
+  background: var(--sev-warning);
+}
+
+.severity-badge.severity-dot-only.severity-error {
+  color: var(--sev-error);
+  background: var(--sev-error);
+}
+
+.severity-badge.severity-dot-only.severity-critical {
+  color: var(--sev-critical);
+  background: var(--sev-critical);
+}
+
+/* Channel type badge */
+.channel-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: var(--channel-telegram-bg);
+  color: var(--channel-telegram);
+  border: 1px solid var(--channel-telegram-bg);
+}
+
+/* Environment chip (development|staging|production) */
+.env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  width: fit-content;
+}
+
+.env-badge.env-md {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.env-badge .env-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  display: inline-block;
+}
+
+.env-badge.env-development {
+  color: var(--env-development);
+  background: var(--env-development-bg);
+  border-color: var(--env-development-border);
+}
+
+.env-badge.env-staging {
+  color: var(--env-staging);
+  background: var(--env-staging-bg);
+  border-color: var(--env-staging-border);
+}
+
+.env-badge.env-production {
+  color: var(--env-production);
+  background: var(--env-production-bg);
+  border-color: var(--env-production-border);
+}
+
+.env-badge.env-unknown {
+  color: var(--text-muted);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
+}
+
+/* Deployment status badge */
+.deploy-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  width: fit-content;
+}
+
+.deploy-status-badge.dep-pending {
+  color: var(--deploy-pending);
+  background: var(--deploy-pending-bg);
+  border-color: var(--deploy-pending-border);
+}
+
+.deploy-status-badge.dep-running {
+  color: var(--deploy-running);
+  background: var(--deploy-running-bg);
+  border-color: var(--deploy-running-border);
+}
+
+.deploy-status-badge.dep-success {
+  color: var(--deploy-success);
+  background: var(--deploy-success-bg);
+  border-color: var(--deploy-success-border);
+}
+
+.deploy-status-badge.dep-failed {
+  color: var(--deploy-failed);
+  background: var(--deploy-failed-bg);
+  border-color: var(--deploy-failed-border);
+}
+
+.deploy-status-badge.dep-timeout {
+  color: #fff;
+  background: var(--deploy-timeout-bg);
+  border-color: var(--deploy-timeout-border);
+}
+
+/* Utility */
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}

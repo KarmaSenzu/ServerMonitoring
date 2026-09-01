@@ -218,6 +218,11 @@ body::before {
   color: var(--badge-admin);
 }
 
+.role-badge.role-operator {
+  background: var(--warning-bg, rgba(255, 193, 7, 0.15));
+  color: var(--warning, #ffc107);
+}
+
 .role-badge.role-viewer {
   background: var(--badge-viewer-bg);
   color: var(--badge-viewer);

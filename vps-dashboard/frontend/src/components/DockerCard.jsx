@@ -9,7 +9,7 @@ import {
   FiLink,
 } from 'react-icons/fi'
 import { docker } from '../api/endpoints.js'
-import { useAuth } from '../auth/useAuth.js'
+import { useAuth, canMutate } from '../auth/useAuth.js'
 import { useToast } from '../ui/useToast.js'
 import { describeError } from '../ui/errors.js'
 import LogsDrawer from './LogsDrawer.jsx'
@@ -20,7 +20,7 @@ export default function DockerCard({ container, project, onRefresh }) {
   const [logsOpen, setLogsOpen] = useState(false)
   const { user } = useAuth()
   const toast = useToast()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = canMutate(user?.role)
 
   const state = container.state || ''
   const isRunning = state === 'running'

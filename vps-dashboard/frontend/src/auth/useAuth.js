@@ -19,3 +19,17 @@ export function useRequireRole(role) {
   }
   return { allowed: current === role, role: current }
 }
+
+// canMutate returns true for roles that can perform infrastructure
+// operations (restart containers, run commands, deploy, backup, SSH
+// terminal/files). Per §32: ADMIN and OPERATOR can mutate.
+export function canMutate(role) {
+  return role === 'admin' || role === 'operator'
+}
+
+// canManage returns true for roles that can manage system configuration
+// (users, credentials, providers, tunnels, snippets). Per §32: only
+// ADMIN can manage.
+export function canManage(role) {
+  return role === 'admin'
+}

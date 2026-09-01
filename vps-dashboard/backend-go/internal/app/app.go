@@ -7,11 +7,19 @@ import (
 
 	"vps-dashboard-api/internal/alerts"
 	"vps-dashboard-api/internal/backup"
+	"vps-dashboard-api/internal/cloud"
+	"vps-dashboard-api/internal/commands"
 	"vps-dashboard-api/internal/config"
+	"vps-dashboard-api/internal/containers"
 	"vps-dashboard-api/internal/deploy"
+	"vps-dashboard-api/internal/files"
 	"vps-dashboard-api/internal/healthcheck"
+	"vps-dashboard-api/internal/mcp"
 	"vps-dashboard-api/internal/models"
 	"vps-dashboard-api/internal/notifier"
+	"vps-dashboard-api/internal/remote"
+	"vps-dashboard-api/internal/search"
+	"vps-dashboard-api/internal/ssh"
 	"vps-dashboard-api/internal/sysinfo"
 )
 
@@ -45,4 +53,36 @@ type App struct {
 	EnvOverrides  *models.EnvOverrideRepo
 	DeployService *deploy.Service
 	BackupService *backup.Service
+
+	// Infrastructure Platform (Phase 1: Server Registry).
+	Servers *models.ServerRepo
+
+	// Infrastructure Platform (Phase 2: SSH engine).
+	SSHKeys    *ssh.KeyStore
+	SSHService *ssh.Service
+
+	// Infrastructure Platform (Phase 3: remote monitoring).
+	ServerMetrics   *models.ServerMetricRepo
+	RemoteEngine    *remote.Engine
+
+	// Infrastructure Platform (Phase 4: container fleet).
+	ContainerService *containers.Service
+
+	// Infrastructure Platform (Phase 6: multi-host commands).
+	CommandService *commands.Service
+
+	// Infrastructure Platform (Phase 7: file manager).
+	FileService *files.Service
+
+	// Infrastructure Platform (Phase 8: SSH tunnels).
+	TunnelManager *ssh.TunnelManager
+
+	// Infrastructure Platform (Phase 9: cloud discovery).
+	CloudRegistry *cloud.Registry
+
+	// Infrastructure Platform (Phase 10: infrastructure search).
+	SearchService *search.Service
+
+	// Infrastructure Platform (Phase 12: MCP/AI).
+	MCP *mcp.Server
 }

@@ -14,9 +14,15 @@ import {
   FiBell,
   FiDatabase,
   FiSettings,
+  FiServer,
+  FiKey,
+  FiShuffle,
+  FiCloud,
 } from 'react-icons/fi'
 import { useAuth } from '../auth/useAuth.js'
 import './AppLayout.css'
+
+import GlobalSearch from './GlobalSearch.jsx'
 
 export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -45,6 +51,8 @@ export default function AppLayout() {
           </div>
         </div>
 
+        <GlobalSearch />
+
         <nav className="sidebar-nav">
           <span className="nav-section-label">Monitoring</span>
           <NavLink
@@ -55,6 +63,56 @@ export default function AppLayout() {
           >
             <span className="nav-icon"><FiCpu /></span>
             Dashboard
+          </NavLink>
+
+          <span className="nav-section-label">Infrastructure</span>
+          <NavLink
+            to="/servers"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiServer /></span>
+            Servers
+          </NavLink>
+          <NavLink
+            to="/ssh-keys"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiKey /></span>
+            SSH Keys
+          </NavLink>
+          <NavLink
+            to="/containers"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiBox /></span>
+            Containers
+          </NavLink>
+          <NavLink
+            to="/commands"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiTerminal /></span>
+            Commands
+          </NavLink>
+          <NavLink
+            to="/tunnels"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiShuffle /></span>
+            SSH Tunnels
+          </NavLink>
+          <NavLink
+            to="/cloud"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiCloud /></span>
+            Cloud Discovery
           </NavLink>
 
           <span className="nav-section-label">Registry</span>

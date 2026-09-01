@@ -1,0 +1,119 @@
+.sshkeys-page {
+  max-width: 1200px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sshkeys-list {
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.sshkeys-row {
+  display: grid;
+  grid-template-columns: 1fr 0.9fr 1.8fr 1.2fr 1fr auto;
+  gap: 14px;
+  padding: 14px 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 13px;
+}
+
+.sshkeys-row:last-child {
+  border-bottom: none;
+}
+
+.sshkeys-row.sshkeys-head {
+  background: rgba(0, 0, 0, 0.25);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.key-name {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.key-type-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.key-fingerprint {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.key-comment {
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.key-date {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.actions-col {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.public-key-box {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  font-size: 12px;
+  resize: vertical;
+  outline: none;
+}
+
+.inline-code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.modal-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 1000px) {
+  .sshkeys-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .sshkeys-row.sshkeys-head {
+    display: none;
+  }
+  .actions-col {
+    justify-content: flex-start;
+  }
+}

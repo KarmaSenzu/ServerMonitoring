@@ -6,6 +6,12 @@ import RequireRole from './auth/RequireRole.jsx'
 import LoginPage from './pages/Login.jsx'
 import DashboardPage from './pages/Dashboard.jsx'
 import ProjectsPage from './pages/Projects.jsx'
+import ServersPage from './pages/Servers.jsx'
+import SSHKeysPage from './pages/SSHKeys.jsx'
+import ContainersPage from './pages/Containers.jsx'
+import CommandsPage from './pages/Commands.jsx'
+import TunnelsPage from './pages/Tunnels.jsx'
+import CloudDiscoveryPage from './pages/CloudDiscovery.jsx'
 import DiscoveryPage from './pages/Discovery.jsx'
 import GeneratorPage from './pages/Generator.jsx'
 import UsersPage from './pages/Users.jsx'
@@ -29,6 +35,12 @@ function App() {
       >
         <Route path="/" element={<DashboardPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/servers" element={<ServersPage />} />
+        <Route path="/ssh-keys" element={<SSHKeysPage />} />
+        <Route path="/containers" element={<ContainersPage />} />
+        <Route path="/commands" element={<CommandsPage />} />
+        <Route path="/tunnels" element={<TunnelsPage />} />
+        <Route path="/cloud" element={<CloudDiscoveryPage />} />
         <Route path="/discovery" element={<DiscoveryPage />} />
         <Route path="/pm2" element={<PM2Page />} />
         <Route path="/events" element={<EventsPage />} />

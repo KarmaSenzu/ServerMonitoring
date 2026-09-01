@@ -167,6 +167,120 @@ export const events = {
   },
 }
 
+// Infrastructure Platform (Phase 10) — global infrastructure search.
+export const searchApi = {
+  search: (q) => getData('/search', { q }),
+}
+
+// Infrastructure Platform (Phase 9) — cloud discovery.
+export const cloudApi = {
+  providers: () => getData('/cloud/providers'),
+  instances: () => request('get', '/cloud/instances'),
+  getInstance: (provider, id) => getData(`/cloud/instances/${encodeURIComponent(provider)}/${encodeURIComponent(id)}`),
+  import: (payload) => request('post', '/cloud/import', payload).then(unwrap),
+}
+
+// Infrastructure Platform (Phase 8) — SSH tunnel manager.
+export const tunnelApi = {
+  list: () => getData('/tunnels'),
+  get: (id) => getData(`/tunnels/${encodeURIComponent(id)}`),
+  listByServer: (serverId) => getData(`/servers/${encodeURIComponent(serverId)}/tunnels`),
+  create: (payload) => request('post', '/tunnels', payload).then(unwrap),
+  update: (id, payload) => request('put', `/tunnels/${encodeURIComponent(id)}`, payload).then(unwrap),
+  remove: (id) => request('delete', `/tunnels/${encodeURIComponent(id)}`),
+  connect: (id) => request('post', `/tunnels/${encodeURIComponent(id)}/connect`).then(unwrap),
+  disconnect: (id) => request('post', `/tunnels/${encodeURIComponent(id)}/disconnect`).then(unwrap),
+}
+
+// Infrastructure Platform (Phase 7) — file manager (SFTP over SSH).
+export const fileApi = {
+  browse: (serverId, dir) =>
+    getData(`/servers/${encodeURIComponent(serverId)}/files`, { path: dir || '/' }),
+  stat: (serverId, p) =>
+    getData(`/servers/${encodeURIComponent(serverId)}/files/${p.replace(/^\//, '')}`, { action: 'stat' }),
+  downloadUrl: (serverId, p) =>
+    `/servers/${encodeURIComponent(serverId)}/files/${p.replace(/^\//, '')}?action=download`,
+  mkdir: (serverId, path) =>
+    request('post', `/servers/${encodeURIComponent(serverId)}/files/mkdir`, { path }).then(unwrap),
+  upload: (serverId, path, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request('post',
+      `/servers/${encodeURIComponent(serverId)}/files/upload?path=${encodeURIComponent(path)}`,
+      formData).then(unwrap)
+  },
+  rename: (serverId, oldPath, newPath) =>
+    request('post',
+      `/servers/${encodeURIComponent(serverId)}/files/rename`,
+      { old_path: oldPath, new_path: newPath }).then(unwrap),
+  remove: (serverId, p) =>
+    request('delete',
+      `/servers/${encodeURIComponent(serverId)}/files/${p.replace(/^\//, '')}`),
+}
+
+// Infrastructure Platform (Phase 6) — multi-host command engine.
+export const commandApi = {
+  snippets: () => getData('/commands/snippets'),
+  getSnippet: (id) => getData(`/commands/snippets/${encodeURIComponent(id)}`),
+  createSnippet: (payload) => request('post', '/commands/snippets', payload).then(unwrap),
+  updateSnippet: (id, payload) => request('put', `/commands/snippets/${encodeURIComponent(id)}`, payload).then(unwrap),
+  deleteSnippet: (id) => request('delete', `/commands/snippets/${encodeURIComponent(id)}`),
+  preview: (payload) => request('post', '/commands/preview', payload).then(unwrap),
+  execute: (payload) => request('post', '/commands/execute', payload).then(unwrap),
+  history: (serverId, limit) => getData('/commands/history', serverId ? { server_id: serverId, limit } : { limit }),
+}
+
+// Infrastructure Platform (Phase 4) — container fleet management.
+export const containerApi = {
+  // Fleet overview — all servers in one call.
+  fleet: () => getData('/containers'),
+  // Per-server container operations.
+  list: (serverId) => getData(`/servers/${encodeURIComponent(serverId)}/containers`),
+  logs: (serverId, name, { tail = 200 } = {}) =>
+    getData(`/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(name)}/logs`, { tail }),
+  start: (serverId, name) =>
+    request('post', `/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(name)}/start`).then(unwrap),
+  stop: (serverId, name, timeoutSeconds) =>
+    request('post',
+      `/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(name)}/stop`,
+      timeoutSeconds ? { timeout_seconds: timeoutSeconds } : {}).then(unwrap),
+  restart: (serverId, name, timeoutSeconds) =>
+    request('post',
+      `/servers/${encodeURIComponent(serverId)}/containers/${encodeURIComponent(name)}/restart`,
+      timeoutSeconds ? { timeout_seconds: timeoutSeconds } : {}).then(unwrap),
+}
+
+// Infrastructure Platform (Phase 1) — Server Registry.
+// admin can create/update/delete; both roles can read.
+export const servers = {
+  list: (filter) => getData('/servers', filter),
+  get: (id) => getData(`/servers/${encodeURIComponent(id)}`),
+  tags: () => getData('/servers/tags'),
+  create: (payload) => request('post', '/servers', payload).then(unwrap),
+  update: (id, payload) => request('put', `/servers/${encodeURIComponent(id)}`, payload).then(unwrap),
+  patch: (id, payload) => request('patch', `/servers/${encodeURIComponent(id)}`, payload).then(unwrap),
+  remove: (id) => request('delete', `/servers/${encodeURIComponent(id)}`),
+  // Phase 3 — remote metrics.
+  metrics: (id) => getData(`/servers/${encodeURIComponent(id)}/metrics`),
+  history: (id, { limit = 100 } = {}) =>
+    getData(`/servers/${encodeURIComponent(id)}/history`, { limit }),
+}
+
+// Infrastructure Platform (Phase 2) — SSH engine.
+// Key metadata is safe for both roles; generation/upload/deletion and
+// test/command execution are admin-only surfaces.
+export const sshApi = {
+  keys: () => getData('/ssh/keys'),
+  generateKey: (payload) =>
+    request('post', '/ssh/keys/generate', payload).then(unwrap),
+  addKey: (payload) => request('post', '/ssh/keys', payload).then(unwrap),
+  publicKey: (name) => getData(`/ssh/keys/${encodeURIComponent(name)}/public`),
+  removeKey: (name) => request('delete', `/ssh/keys/${encodeURIComponent(name)}`),
+  test: (serverId) => request('post', `/ssh/test/${encodeURIComponent(serverId)}`).then(unwrap),
+  command: (serverId, payload) =>
+    request('post', `/ssh/command/${encodeURIComponent(serverId)}`, payload).then(unwrap),
+}
+
 // Notification channels.
 export const channels = {
   list: () => getData('/notifications/channels'),

@@ -7,6 +7,14 @@ const apiPrefixes = [
   '/docker',
   '/pm2',
   '/projects',
+  '/servers',
+  '/ssh',
+  '/containers',
+  '/commands',
+  '/tunnels',
+  '/cloud',
+  '/search',
+  '/mcp',
   '/discovery',
   '/generator',
   '/users',
@@ -45,6 +53,7 @@ const proxy = Object.fromEntries(
       target: apiTarget,
       changeOrigin: true,
       secure: false,
+      ws: p === '/servers', // WebSocket only for terminal routes
       bypass(req) {
         if (isHtmlRequest(req)) {
           // Returning the URL tells Vite to serve it as a static asset,

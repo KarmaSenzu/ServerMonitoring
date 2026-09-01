@@ -126,7 +126,7 @@ export default function UsersPage() {
                     onClick={() => setConfirmRole(u)}
                   >
                     <FiShield />
-                    {u.role === 'admin' ? 'Make viewer' : 'Make admin'}
+                    {u.role === 'admin' ? 'Demote' : 'Set role'}
                   </button>
                   <button
                     type="button"
@@ -196,18 +196,20 @@ export default function UsersPage() {
 
       {confirmRole && (
         <ConfirmModal
-          title={`Change role to ${confirmRole.role === 'admin' ? 'viewer' : 'admin'}?`}
-          message={`This will ${confirmRole.role === 'admin' ? 'remove admin privileges from' : 'grant admin to'} "${confirmRole.username}".`}
+          title={`Change role for ${confirmRole.username}?`}
+          message={`Current role: ${confirmRole.role}. Select a new role below.`}
           confirmLabel="Change role"
           submitting={patchM.isPending}
           onCancel={() => setConfirmRole(null)}
           onConfirm={() => {
-            const newRole = confirmRole.role === 'admin' ? 'viewer' : 'admin'
+            // Cycle: admin → operator → viewer → admin
+            const cycle = { admin: 'operator', operator: 'viewer', viewer: 'admin' }
+            const newRole = cycle[confirmRole.role] || 'viewer'
             patchM.mutate(
               { id: confirmRole.id, payload: { role: newRole } },
               {
                 onSuccess: () => {
-                  toast.push({ type: 'success', message: `Role updated for ${confirmRole.username}` })
+                  toast.push({ type: 'success', message: `Role updated to ${newRole} for ${confirmRole.username}` })
                   setConfirmRole(null)
                 },
               }

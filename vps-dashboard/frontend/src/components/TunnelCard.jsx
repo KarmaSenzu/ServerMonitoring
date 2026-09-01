@@ -9,7 +9,7 @@ import {
   FiRefreshCw,
 } from 'react-icons/fi'
 import { tunnels as tunnelsApi } from '../api/endpoints.js'
-import { useAuth } from '../auth/useAuth.js'
+import { useAuth, canMutate } from '../auth/useAuth.js'
 import { useToast } from '../ui/useToast.js'
 import { describeError } from '../ui/errors.js'
 import './TunnelCard.css'
@@ -66,7 +66,7 @@ export default function TunnelCard({ tunnel, onRestart }) {
   const visibleRoutes = ingress.filter((r) => !r.catchall && r.hostname && r.hostname !== '*')
 
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = canMutate(user?.role)
   const toast = useToast()
   const [restarting, setRestarting] = useState(false)
 

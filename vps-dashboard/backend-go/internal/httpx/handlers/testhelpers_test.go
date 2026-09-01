@@ -59,9 +59,16 @@ func newTestApp(t *testing.T) *app.App {
 		JWTTTL:      time.Hour,
 		LogLevel:    "info",
 		CORSOrigins: []string{"http://localhost"},
+		SSHKeysDir:  filepath.Join(t.TempDir(), "ssh-keys"),
 	}
 
-	return &app.App{Cfg: cfg, DB: conn, Logger: logger}
+	return &app.App{
+		Cfg:             cfg,
+		DB:              conn,
+		Logger:          logger,
+		ServerMetrics:   models.NewServerMetricRepo(conn),
+		ContainerService: nil, // handler falls back to a.SSHService
+	}
 }
 
 // buildTestEngine returns the production gin.Engine wired against a.

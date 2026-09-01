@@ -32,6 +32,20 @@ type Config struct {
 	BackupDir       string
 	BackupKeep      int
 	BackupHourLocal int
+
+	// Infrastructure Platform (Phase 2) — SSH engine knobs.
+	// SSHKeysDir is where registered private keys live (0600 files).
+	SSHKeysDir string
+
+	// Infrastructure Platform (Phase 3) — remote monitoring knobs.
+	RemotePollInterval   time.Duration
+	RemoteMaxParallel    int
+	RemoteCommandTimeout time.Duration
+	RemoteRetention      time.Duration
+
+	// Infrastructure Platform (Phase 12) — MCP/AI.
+	MCPAPIKey    string
+	MCPAuditPath string
 }
 
 // LoadFromEnv reads configuration from process environment.
@@ -110,6 +124,34 @@ func LoadFromEnv() (*Config, error) {
 	} else {
 		cfg.BackupHourLocal = n
 	}
+
+	cfg.SSHKeysDir = getEnv("SSH_KEYS_DIR", "./data/ssh-keys")
+
+	// Phase 3: remote monitoring cadence.
+	if d, err := parsePositiveDuration("REMOTE_POLL_INTERVAL", "60s"); err != nil {
+		return nil, err
+	} else {
+		cfg.RemotePollInterval = d
+	}
+	if n, err := parsePositiveInt("REMOTE_MAX_PARALLEL", "4"); err != nil {
+		return nil, err
+	} else {
+		cfg.RemoteMaxParallel = n
+	}
+	if d, err := parsePositiveDuration("REMOTE_COMMAND_TIMEOUT", "15s"); err != nil {
+		return nil, err
+	} else {
+		cfg.RemoteCommandTimeout = d
+	}
+	if d, err := parsePositiveDuration("REMOTE_RETENTION", "24h"); err != nil {
+		return nil, err
+	} else {
+		cfg.RemoteRetention = d
+	}
+
+	// Phase 12: MCP/AI server (optional — only enabled when API key is set).
+	cfg.MCPAPIKey = getEnv("MCP_API_KEY", "")
+	cfg.MCPAuditPath = getEnv("MCP_AUDIT_PATH", "./data/mcp-audit.jsonl")
 
 	return cfg, nil
 }

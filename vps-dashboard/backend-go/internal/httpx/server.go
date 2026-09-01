@@ -53,6 +53,16 @@ func BuildEngine(a *app.App) *gin.Engine {
 	webhooksH := handlers.NewWebhooksHandler(a)
 	backupsH := handlers.NewBackupsHandler(a)
 	envH := handlers.NewEnvHandler(a)
+	serversH := handlers.NewServerHandler(a)
+	sshH := handlers.NewSSHHandler(a)
+	containersH := handlers.NewContainerHandler(a)
+	terminalH := handlers.NewTerminalHandler(a)
+	commandsH := handlers.NewCommandHandler(a)
+	filesH := handlers.NewFileHandler(a)
+	sshTunnelsH := handlers.NewSshTunnelHandler(a)
+	cloudH := handlers.NewCloudHandler(a)
+	searchH := handlers.NewSearchHandler(a)
+	mcpH := handlers.NewMCPHandler(a)
 
 	// Public auth routes (login/logout) live on the root group.
 	public := r.Group("")
@@ -60,6 +70,8 @@ func BuildEngine(a *app.App) *gin.Engine {
 	// Webhook receiver is public: HMAC over the request body is the
 	// authentication mechanism.
 	webhooksH.RegisterPublic(public)
+	// MCP endpoints are public (API key auth is inline, not JWT).
+	mcpH.Register(public)
 
 	// Protected routes require a valid JWT.
 	protected := r.Group("")
@@ -77,8 +89,41 @@ func BuildEngine(a *app.App) *gin.Engine {
 	notifsH.RegisterRulesReads(protected)
 	backupsH.RegisterReads(protected)
 	envH.RegisterReads(protected)
+	serversH.RegisterReads(protected)
+	sshH.RegisterReads(protected)
+	containersH.RegisterReads(protected)
+	commandsH.RegisterReads(protected)
+	filesH.RegisterReads(protected)
+	sshTunnelsH.RegisterReads(protected)
+	cloudH.RegisterReads(protected)
+	searchH.RegisterReads(protected)
 
-	// Mutating routes additionally require an admin role.
+	// Mutating routes — operator-level (admin + operator can access).
+	// Per §32: OPERATOR can restart containers, run commands, deploy,
+	// backup, and use SSH terminal/files. ADMIN can do everything
+	// OPERATOR can plus manage users/credentials/providers.
+	operatorOnly := r.Group("")
+	operatorOnly.Use(middleware.RequireAuth([]byte(a.Cfg.JWTSecret)))
+	operatorOnly.Use(middleware.RequireRole("admin", "operator"))
+
+	// Container operations: restart/stop/start (operator-level).
+	containersH.RegisterWrites(operatorOnly)
+
+	// Terminal WebSocket (operator-level interactive access).
+	terminalH.Register(operatorOnly)
+
+	// File operations: upload/mkdir/rename/delete (operator-level).
+	filesH.RegisterWrites(operatorOnly)
+
+	// SSH operations: test + command execution (operator-level).
+	// Key management stays admin-only.
+	sshH.RegisterOperatorWrites(operatorOnly)
+
+	// Command execution + preview (operator-level).
+	// Snippet CRUD stays admin-only.
+	commandsH.RegisterOperatorWrites(operatorOnly)
+
+	// Admin-only routes (manage users, credentials, providers, config).
 	adminOnly := r.Group("")
 	adminOnly.Use(middleware.RequireAuth([]byte(a.Cfg.JWTSecret)))
 	adminOnly.Use(middleware.RequireRole("admin"))
@@ -92,6 +137,11 @@ func BuildEngine(a *app.App) *gin.Engine {
 	notifsH.RegisterRulesWrites(adminOnly)
 	backupsH.RegisterWrites(adminOnly)
 	envH.RegisterWrites(adminOnly)
+	serversH.RegisterWrites(adminOnly)
+	sshH.RegisterWrites(adminOnly)
+	commandsH.RegisterWrites(adminOnly)
+	sshTunnelsH.RegisterWrites(adminOnly)
+	cloudH.RegisterWrites(adminOnly)
 
 	return r
 }

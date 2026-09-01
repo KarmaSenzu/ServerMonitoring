@@ -18,17 +18,25 @@ import (
 	"vps-dashboard-api/internal/app"
 	"vps-dashboard-api/internal/auth"
 	"vps-dashboard-api/internal/backup"
+	"vps-dashboard-api/internal/cloud"
+	"vps-dashboard-api/internal/commands"
 	"vps-dashboard-api/internal/config"
+	"vps-dashboard-api/internal/containers"
 	"vps-dashboard-api/internal/db"
 	"vps-dashboard-api/internal/deploy"
 	"vps-dashboard-api/internal/discovery"
 	"vps-dashboard-api/internal/docker"
+	"vps-dashboard-api/internal/files"
 	"vps-dashboard-api/internal/healthcheck"
 	"vps-dashboard-api/internal/httpx"
 	"vps-dashboard-api/internal/maintenance"
+	"vps-dashboard-api/internal/mcp"
 	"vps-dashboard-api/internal/models"
 	"vps-dashboard-api/internal/notifier"
 	"vps-dashboard-api/internal/pm2"
+	"vps-dashboard-api/internal/remote"
+	"vps-dashboard-api/internal/search"
+	"vps-dashboard-api/internal/ssh"
 	"vps-dashboard-api/internal/sysinfo"
 	"vps-dashboard-api/internal/tunnel"
 )
@@ -89,6 +97,7 @@ func run() error {
 	settingsRepo := models.NewSettingsRepo(conn)
 	projectsRepo := models.NewProjectRepo(conn)
 	envOverridesRepo := models.NewEnvOverrideRepo(conn)
+	serversRepo := models.NewServerRepo(conn)
 
 	// Discovery service correlates docker/pm2/tunnel state. We keep a
 	// single instance for the auto-seed step below; HTTP handlers build
@@ -125,6 +134,71 @@ func run() error {
 	deploymentRepo := deploy.NewDeploymentRepo(conn)
 	deployService := deploy.NewService(logger, projectsRepo, deploymentRepo, eventsRepo)
 	backupRepo := backup.NewRepo(conn)
+
+	// Infrastructure Platform (Phase 2): SSH key store + engine. A
+	// failure to open the key store is fatal — the platform refuses
+	// to run SSH operations against an unreadable credential store.
+	sshKeys, err := ssh.NewKeyStore(cfg.SSHKeysDir)
+	if err != nil {
+		return err
+	}
+	sshService := ssh.NewService(sshKeys)
+
+	// Infrastructure Platform (Phase 3): remote monitoring engine.
+	metricsRepo := models.NewServerMetricRepo(conn)
+	remoteCollector := remote.NewCollector(sshService)
+	remoteEngine := remote.NewEngine(
+		logger,
+		serversRepo,
+		metricsRepo,
+		eventsRepo,
+		remoteCollector,
+		remote.EngineConfig{
+			Interval:       cfg.RemotePollInterval,
+			MaxParallel:    cfg.RemoteMaxParallel,
+			CommandTimeout: cfg.RemoteCommandTimeout,
+			Retention:      cfg.RemoteRetention,
+		},
+	)
+
+	// Infrastructure Platform (Phase 4): container fleet management.
+	containerSvc := containers.NewService(sshService)
+
+	// Infrastructure Platform (Phase 6): multi-host command engine.
+	commandRunsRepo := models.NewCommandRunRepo(conn)
+	commandSvc := commands.NewService(logger, sshService, commandRunsRepo)
+
+	// Infrastructure Platform (Phase 7): file manager (SFTP).
+	fileSvc := files.NewService(sshService)
+
+	// Infrastructure Platform (Phase 8): SSH tunnel manager.
+	tunnelMgr := ssh.NewTunnelManager(sshService)
+
+	// Infrastructure Platform (Phase 9): cloud discovery.
+	cloudReg := cloud.NewRegistry()
+	cloudReg.Register(cloud.NewManualProvider(nil))
+
+	// Infrastructure Platform (Phase 10): infrastructure search.
+	tunnelRepo := models.NewTunnelRepo(conn)
+	snippetRepo := models.NewCommandSnippetRepo(conn)
+	searchSvc := search.NewService(serversRepo, snippetRepo, tunnelRepo)
+
+	// Infrastructure Platform (Phase 12): MCP/AI server (read-only).
+	var mcpServer *mcp.Server
+	if cfg.MCPAPIKey != "" {
+		mcpServer = mcp.NewServer(
+			logger,
+			serversRepo,
+			metricsRepo,
+			eventsRepo,
+			snippetRepo,
+			tunnelRepo,
+			cfg.MCPAPIKey,
+			cfg.MCPAuditPath,
+		)
+		logger.Info().Str("audit_path", cfg.MCPAuditPath).Msg("mcp.server_enabled")
+	}
+
 	backupService := &backup.Service{
 		Logger:    logger,
 		DB:        conn,
@@ -154,6 +228,18 @@ func run() error {
 		EnvOverrides:   envOverridesRepo,
 		DeployService:  deployService,
 		BackupService:  backupService,
+		Servers:        serversRepo,
+		SSHKeys:        sshKeys,
+		SSHService:     sshService,
+		ServerMetrics:  metricsRepo,
+		RemoteEngine:   remoteEngine,
+		ContainerService: containerSvc,
+		CommandService:  commandSvc,
+		FileService:     fileSvc,
+		TunnelManager:   tunnelMgr,
+		CloudRegistry:   cloudReg,
+		SearchService:  searchSvc,
+		MCP:            mcpServer,
 	}
 	router := httpx.NewRouter(a)
 
@@ -171,16 +257,21 @@ func run() error {
 
 	// Maintenance purger trims old events and health rows.
 	purger := &maintenance.Purger{
-		Logger:        logger,
-		Events:        eventsRepo,
-		Health:        healthRepo,
-		KeepEventsFor: cfg.EventsRetention,
-		KeepHealthFor: cfg.HealthRetention,
+		Logger:         logger,
+		Events:         eventsRepo,
+		Health:         healthRepo,
+		Metrics:        metricsRepo,
+		KeepEventsFor:  cfg.EventsRetention,
+		KeepHealthFor:  cfg.HealthRetention,
+		KeepMetricsFor: cfg.RemoteRetention,
 	}
 	go purger.Run(rootCtx)
 
 	// Daily backup scheduler.
 	go backupService.Run(rootCtx)
+
+	// Remote monitoring loop: polls registered servers for metrics.
+	go remoteEngine.Run(rootCtx)
 
 	// 8. http.Server with sane timeouts.
 	srv := &http.Server{

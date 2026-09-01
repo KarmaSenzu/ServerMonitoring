@@ -1,0 +1,74 @@
+.terminal-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.terminal-modal {
+  width: 90vw;
+  max-width: 900px;
+  height: 80vh;
+  max-height: 700px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
+}
+
+.terminal-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.3);
+  gap: 12px;
+}
+
+.terminal-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}
+
+.terminal-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.terminal-close-btn {
+  font-size: 12px;
+  padding: 4px 12px;
+}
+
+.terminal-container {
+  flex: 1;
+  background: #0a0a14;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.terminal-container .xterm {
+  height: 100%;
+}
+
+.terminal-error {
+  padding: 8px 16px;
+  color: var(--danger);
+  font-size: 12px;
+  background: var(--danger-bg);
+  border-top: 1px solid var(--glass-border);
+  word-break: break-word;
+}

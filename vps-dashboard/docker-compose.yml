@@ -45,6 +45,16 @@ services:
       SYSTEM_TICK_INTERVAL: ${SYSTEM_TICK_INTERVAL:-30s}
       BACKUP_KEEP: ${BACKUP_KEEP:-7}
       BACKUP_HOUR_LOCAL: ${BACKUP_HOUR_LOCAL:-3}
+      # SSH engine (Phase 2) — private key store di dalam volume /data.
+      SSH_KEYS_DIR: /data/ssh-keys
+      # Remote monitoring (Phase 3) — poll cadence & retention.
+      REMOTE_POLL_INTERVAL: ${REMOTE_POLL_INTERVAL:-60s}
+      REMOTE_MAX_PARALLEL: ${REMOTE_MAX_PARALLEL:-4}
+      REMOTE_COMMAND_TIMEOUT: ${REMOTE_COMMAND_TIMEOUT:-15s}
+      REMOTE_RETENTION: ${REMOTE_RETENTION:-24h}
+      # MCP/AI server (Phase 12) — optional, set MCP_API_KEY to enable.
+      MCP_API_KEY: ${MCP_API_KEY:-}
+      MCP_AUDIT_PATH: /data/mcp-audit.jsonl
       # gopsutil — baca metrik dari host yang di-mount, bukan dari container
       HOST_PROC: /host/proc
       HOST_SYS: /host/sys

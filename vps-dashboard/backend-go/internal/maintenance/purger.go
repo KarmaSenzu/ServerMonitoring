@@ -12,9 +12,10 @@ import (
 
 // Default retention windows applied when zero values are supplied.
 const (
-	defaultKeepEventsFor = 30 * 24 * time.Hour // 30 days
-	defaultKeepHealthFor = 14 * 24 * time.Hour // 14 days
-	purgeInterval        = time.Hour
+	defaultKeepEventsFor  = 30 * 24 * time.Hour // 30 days
+	defaultKeepHealthFor  = 14 * 24 * time.Hour // 14 days
+	defaultKeepMetricsFor = 24 * time.Hour      // 24 hours
+	purgeInterval         = time.Hour
 )
 
 // Purger periodically deletes old rows from the events and
@@ -24,8 +25,10 @@ type Purger struct {
 	Logger        zerolog.Logger
 	Events        *models.EventRepo
 	Health        *models.HealthRepo
+	Metrics       *models.ServerMetricRepo
 	KeepEventsFor time.Duration
 	KeepHealthFor time.Duration
+	KeepMetricsFor time.Duration
 }
 
 // Run blocks until ctx is cancelled, ticking once an hour. The first
@@ -40,6 +43,10 @@ func (p *Purger) Run(ctx context.Context) {
 	if keepHealth <= 0 {
 		keepHealth = defaultKeepHealthFor
 	}
+	keepMetrics := p.KeepMetricsFor
+	if keepMetrics <= 0 {
+		keepMetrics = defaultKeepMetricsFor
+	}
 
 	ticker := time.NewTicker(purgeInterval)
 	defer ticker.Stop()
@@ -47,6 +54,7 @@ func (p *Purger) Run(ctx context.Context) {
 	p.Logger.Info().
 		Dur("keep_events_for", keepEvents).
 		Dur("keep_health_for", keepHealth).
+		Dur("keep_metrics_for", keepMetrics).
 		Dur("interval", purgeInterval).
 		Msg("maintenance.purger.started")
 
@@ -56,13 +64,13 @@ func (p *Purger) Run(ctx context.Context) {
 			p.Logger.Info().Msg("maintenance.purger.stopped")
 			return
 		case <-ticker.C:
-			p.tick(ctx, keepEvents, keepHealth)
+			p.tick(ctx, keepEvents, keepHealth, keepMetrics)
 		}
 	}
 }
 
 // tick runs one purge cycle. Errors are logged but never propagated.
-func (p *Purger) tick(ctx context.Context, keepEvents, keepHealth time.Duration) {
+func (p *Purger) tick(ctx context.Context, keepEvents, keepHealth, keepMetrics time.Duration) {
 	now := time.Now().UTC()
 
 	if p.Events != nil {
@@ -88,6 +96,19 @@ func (p *Purger) tick(ctx context.Context, keepEvents, keepHealth time.Duration)
 				Int("deleted", n).
 				Time("cutoff", cutoff).
 				Msg("maintenance.purger.health")
+		}
+	}
+
+	if p.Metrics != nil {
+		cutoff := now.Add(-keepMetrics)
+		n, err := p.Metrics.Purge(ctx, cutoff)
+		if err != nil {
+			p.Logger.Warn().Err(err).Msg("maintenance.purger.metrics_failed")
+		} else if n > 0 {
+			p.Logger.Info().
+				Int("deleted", n).
+				Time("cutoff", cutoff).
+				Msg("maintenance.purger.metrics")
 		}
 	}
 }

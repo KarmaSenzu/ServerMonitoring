@@ -1,0 +1,224 @@
+.containers-page {
+  max-width: 1200px;
+}
+
+.containers-summary {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.containers-summary .summary-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  min-width: 110px;
+}
+
+.containers-summary .chip-value {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.containers-summary .chip-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.containers-summary .status-online .chip-value {
+  color: var(--success);
+}
+
+.containers-summary .status-unknown .chip-value {
+  color: var(--text-muted);
+}
+
+.fleet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fleet-server {
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.fleet-server-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.fleet-server-header:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.fleet-chevron {
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+}
+
+.fleet-server-name {
+  font-weight: 600;
+  flex: 1;
+  text-align: left;
+}
+
+.fleet-counts {
+  display: flex;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.fleet-error {
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.engine-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--accent-glow);
+  color: var(--accent-light);
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  text-transform: uppercase;
+}
+
+.fleet-server-body {
+  padding: 0 18px 16px;
+}
+
+.fleet-error-detail {
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.fleet-empty {
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.container-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
+}
+
+.container-card {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.container-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.container-state-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.container-state-dot.state-running {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.container-state-dot.state-exited,
+.container-state-dot.state-dead {
+  background: var(--danger);
+}
+
+.container-state-dot.state-paused,
+.container-state-dot.state-restarting {
+  background: var(--warning);
+}
+
+.container-name {
+  font-weight: 600;
+  font-size: 13px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.container-state-badge {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.container-card-body {
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.container-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.container-meta .ports {
+  font-size: 11px;
+}
+
+.container-status {
+  font-size: 11px;
+}
+
+.container-card-actions {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.mono {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+}

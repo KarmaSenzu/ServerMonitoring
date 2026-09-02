@@ -65,6 +65,7 @@ type Server struct {
 	SSHUsername        string    `json:"ssh_username"`
 	CredentialType     string    `json:"credential_type"`
 	CredentialRef      string    `json:"credential_ref"`
+	CredentialPassword string    `json:"credential_password,omitempty"` // direct password (when type=password)
 	OperatingSystem    string    `json:"operating_system"`
 	Architecture       string    `json:"architecture"`
 	Provider           string    `json:"provider"`
@@ -109,7 +110,7 @@ func NewServerRepo(db *sql.DB) *ServerRepo {
 
 // serverColumns is the canonical SELECT list for the servers table.
 const serverColumns = `id, name, hostname, ip_address, ssh_port, ssh_username,
-	credential_type, credential_ref, operating_system, architecture,
+	credential_type, credential_ref, credential_password, operating_system, architecture,
 	provider, provider_instance_id, environment, status, status_detail,
 	last_seen_at, notes, enabled, created_at, updated_at`
 
@@ -142,13 +143,13 @@ func (r *ServerRepo) Create(ctx context.Context, s Server) (Server, error) {
 	if _, err := tx.ExecContext(ctx, `
 		INSERT INTO servers (
 			id, name, hostname, ip_address, ssh_port, ssh_username,
-			credential_type, credential_ref, operating_system, architecture,
+			credential_type, credential_ref, credential_password, operating_system, architecture,
 			provider, provider_instance_id, environment, status, status_detail,
 			last_seen_at, notes, enabled
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		s.ID, s.Name, s.Hostname, s.IPAddress, s.SSHPort, s.SSHUsername,
-		s.CredentialType, s.CredentialRef, s.OperatingSystem, s.Architecture,
+		s.CredentialType, s.CredentialRef, s.CredentialPassword, s.OperatingSystem, s.Architecture,
 		s.Provider, s.ProviderInstanceID, s.Environment, s.Status, s.StatusDetail,
 		lastSeenRaw(s.LastSeenAt), s.Notes, enabledInt(s.Enabled),
 	); err != nil {
@@ -192,13 +193,15 @@ func (r *ServerRepo) Update(ctx context.Context, s Server) (Server, error) {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE servers SET
 			name = ?, hostname = ?, ip_address = ?, ssh_port = ?, ssh_username = ?,
-			credential_type = ?, credential_ref = ?, operating_system = ?, architecture = ?,
+			credential_type = ?, credential_ref = ?, credential_password = ?,
+			operating_system = ?, architecture = ?,
 			provider = ?, provider_instance_id = ?, environment = ?, notes = ?,
 			enabled = ?, updated_at = datetime('now')
 		WHERE id = ?
 	`,
 		s.Name, s.Hostname, s.IPAddress, s.SSHPort, s.SSHUsername,
-		s.CredentialType, s.CredentialRef, s.OperatingSystem, s.Architecture,
+		s.CredentialType, s.CredentialRef, s.CredentialPassword,
+		s.OperatingSystem, s.Architecture,
 		s.Provider, s.ProviderInstanceID, s.Environment, s.Notes,
 		enabledInt(s.Enabled), s.ID,
 	)
@@ -538,7 +541,7 @@ func scanServerRow(s rowScanner) (Server, error) {
 	)
 	err := s.Scan(
 		&srv.ID, &srv.Name, &srv.Hostname, &srv.IPAddress, &srv.SSHPort, &srv.SSHUsername,
-		&srv.CredentialType, &srv.CredentialRef, &srv.OperatingSystem, &srv.Architecture,
+		&srv.CredentialType, &srv.CredentialRef, &srv.CredentialPassword, &srv.OperatingSystem, &srv.Architecture,
 		&srv.Provider, &srv.ProviderInstanceID, &srv.Environment, &srv.Status, &srv.StatusDetail,
 		&lastSeenRaw, &srv.Notes, &enabled, &createdRaw, &updatedRaw,
 	)

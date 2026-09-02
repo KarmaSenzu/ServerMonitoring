@@ -158,11 +158,15 @@ func (svc *Service) authMethods(s models.Server) ([]ssh.AuthMethod, error) {
 		return []ssh.AuthMethod{ssh.PublicKeys(signer)}, nil
 
 	case models.ServerCredentialPassword:
+		// First check for direct password (stored in credential_password field)
+		if s.CredentialPassword != "" {
+			return []ssh.AuthMethod{ssh.Password(s.CredentialPassword)}, nil
+		}
+		// Fall back to env var reference: VPSD_SSH_PASSWORD_<REF>
 		ref := strings.TrimSpace(s.CredentialRef)
 		if ref == "" {
 			return nil, fmt.Errorf("%w: no password reference", ErrCredentialNotConfigured)
 		}
-		// Passwords resolve from the environment: VPSD_SSH_PASSWORD_<REF>.
 		envKey := "VPSD_SSH_PASSWORD_" + strings.ToUpper(strings.ReplaceAll(ref, "-", "_"))
 		pass := os.Getenv(envKey)
 		if pass == "" {

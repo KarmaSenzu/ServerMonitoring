@@ -16,7 +16,7 @@ BINARY_NAME="vpsdash"
 INSTALL_DIR="/usr/local/bin"
 DATA_DIR="/var/lib/vpsdash"
 SERVICE_USER="vpsdash"
-GITHUB_REPO="yourusername/monitoring-server"  # TODO: Update with actual repo
+GITHUB_REPO="KarmaSenzu/ServerMonitoring"
 
 echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   VPS Dashboard Installation Script   ║${NC}"

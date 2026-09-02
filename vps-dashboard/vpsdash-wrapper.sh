@@ -5,10 +5,11 @@
 #   vpsdash start        Same as above
 #   vpsdash stop         Stop server
 #   vpsdash restart      Restart server
-#   vpsdash status       Check if running
+#   vpsdash status       Check if running (PID, uptime, memory)
 #   vpsdash logs         Tail logs (Ctrl+C to exit)
 #   vpsdash config       Show config & credentials
 #   vpsdash --version    Show version
+#   vpsdash help         Show full help (commands + examples)
 #
 # First run auto-generates config with random secrets.
 # Config: ~/.vpsdash/config.env
@@ -297,22 +298,49 @@ case "${1:-start}" in
         cmd_version
         ;;
     help|--help|-h)
-        echo "VPS Dashboard - Smart Server Manager"
         echo ""
-        echo "Usage: vpsdash [command]"
+        echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}║        VPS Dashboard - Smart Server Manager      ║${NC}"
+        echo -e "${CYAN}╚══════════════════════════════════════════════════╝${NC}"
         echo ""
-        echo "Commands:"
-        echo "  start     Start server in background (default)"
-        echo "  stop      Stop server"
-        echo "  restart   Restart server"
-        echo "  status    Check if running"
-        echo "  logs      Tail logs (Ctrl+C to exit)"
-        echo "  config    Show config & credentials"
-        echo "  --version Show version"
-        echo "  help      Show this help"
+        echo -e "${GREEN}USAGE:${NC}"
+        echo "  vpsdash [command]"
         echo ""
-        echo "First run auto-generates config with random secrets."
-        echo "Config: $CONFIG_FILE"
+        echo -e "${GREEN}COMMANDS:${NC}"
+        echo -e "  ${CYAN}start${NC}      Start server in background (default action)"
+        echo -e "  ${CYAN}stop${NC}       Stop server"
+        echo -e "  ${CYAN}restart${NC}    Restart server"
+        echo -e "  ${CYAN}status${NC}     Check if running (shows PID, uptime, memory)"
+        echo -e "  ${CYAN}logs${NC}       Tail logs in real-time (Ctrl+C to exit)"
+        echo -e "  ${CYAN}config${NC}     Show config file & admin credentials"
+        echo -e "  ${CYAN}--version${NC}  Show version info"
+        echo -e "  ${CYAN}help${NC}       Show this help message"
+        echo ""
+        echo -e "${GREEN}EXAMPLES:${NC}"
+        echo -e "  ${YELLOW}vpsdash${NC}              # Start server (first run = auto setup)"
+        echo -e "  ${YELLOW}vpsdash status${NC}       # Check if running"
+        echo -e "  ${YELLOW}vpsdash logs${NC}         # View live logs"
+        echo -e "  ${YELLOW}vpsdash stop${NC}         # Stop server"
+        echo -e "  ${YELLOW}vpsdash restart${NC}     # Restart after config change"
+        echo -e "  ${YELLOW}vpsdash config${NC}      # Show credentials & config path"
+        echo ""
+        echo -e "${GREEN}FIRST RUN:${NC}"
+        echo "  Auto-generates config with random secrets at:"
+        echo -e "  ${CYAN}$CONFIG_FILE${NC}"
+        echo ""
+        echo "  Admin credentials shown once — save them!"
+        echo ""
+        echo -e "${GREEN}CONFIG:${NC}"
+        echo "  Edit config:  nano $CONFIG_FILE"
+        echo "  Then restart:  vpsdash restart"
+        echo ""
+        echo -e "${GREEN}DATABASE:${NC}"
+        echo "  Default: SQLite at $VPSDASH_HOME/vpsdash.db"
+        echo "  Switch to PostgreSQL/Supabase: edit database.json"
+        echo ""
+        echo -e "${GREEN}DOCUMENTATION:${NC}"
+        echo "  https://github.com/KarmaSenzu/ServerMonitoring"
+        echo ""
         ;;
     *)
         # Pass through to binary for unknown commands (e.g., --version flags)

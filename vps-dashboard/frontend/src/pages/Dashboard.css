@@ -75,6 +75,76 @@
   gap: 12px;
 }
 
+/* === SERVER SELECTOR === */
+.server-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 6px 12px;
+  transition: border-color 0.2s ease;
+}
+
+.server-selector:hover {
+  border-color: var(--glass-border-hover);
+}
+
+.server-selector > svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.server-select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-family: inherit;
+  padding: 4px 8px;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 200px;
+  padding-right: 24px;
+}
+
+.server-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 8px;
+  color: var(--text-muted);
+  font-size: 14px;
+  pointer-events: none;
+}
+
+/* Stat card header: icon + label side-by-side (not stacked) */
+.stat-card .stat-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-card .stat-header .stat-icon {
+  flex-shrink: 0;
+}
+
+.stat-card .stat-header .stat-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
 .stat-icon {
   width: 40px;
   height: 40px;

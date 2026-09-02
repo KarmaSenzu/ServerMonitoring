@@ -146,7 +146,7 @@ func (r *ServerRepo) Create(ctx context.Context, s Server) (Server, error) {
 			credential_type, credential_ref, credential_password, operating_system, architecture,
 			provider, provider_instance_id, environment, status, status_detail,
 			last_seen_at, notes, enabled
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		s.ID, s.Name, s.Hostname, s.IPAddress, s.SSHPort, s.SSHUsername,
 		s.CredentialType, s.CredentialRef, s.CredentialPassword, s.OperatingSystem, s.Architecture,

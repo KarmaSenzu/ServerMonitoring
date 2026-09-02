@@ -8,6 +8,7 @@
 #   vpsdash status       Check if running (PID, uptime, memory)
 #   vpsdash logs         Tail logs (Ctrl+C to exit)
 #   vpsdash config       Show config & credentials
+#   vpsdash update       Download & install latest version from GitHub
 #   vpsdash --version    Show version
 #   vpsdash help         Show full help (commands + examples)
 #
@@ -273,6 +274,133 @@ cmd_version() {
     fi
 }
 
+# === UPDATE COMMAND ===
+# Downloads the latest release from GitHub, replaces the binary, and
+# restarts the server if it was running. Preserves config & data.
+cmd_update() {
+    GITHUB_REPO="KarmaSenzu/ServerMonitoring"
+    
+    echo -e "${CYAN}Checking for latest release...${NC}"
+    
+    # Get latest version from GitHub API
+    LATEST_VERSION=$(curl -sL "https://api.github.com/repos/${GITHUB_REPO}/releases/latest" 2>/dev/null | grep '"tag_name"' | cut -d'"' -f4)
+    
+    if [ -z "$LATEST_VERSION" ]; then
+        error "❌ Failed to fetch latest version from GitHub"
+        echo ""
+        echo "Possible causes:"
+        echo "  - GitHub API rate limit (try again later)"
+        echo "  - No releases published yet"
+        echo "  - Network issues"
+        echo ""
+        echo "Manual download: https://github.com/${GITHUB_REPO}/releases"
+        exit 1
+    fi
+    
+    # Get current version
+    BINARY=$(find_binary)
+    CURRENT_VERSION=""
+    if [ -n "$BINARY" ]; then
+        CURRENT_VERSION=$("$BINARY" --version 2>/dev/null | head -1 | awk '{print $3}')
+    fi
+    
+    echo -e "${CYAN}Current version:${NC} ${CURRENT_VERSION:-unknown}"
+    echo -e "${CYAN}Latest version:${NC}  ${LATEST_VERSION}"
+    
+    if [ "$CURRENT_VERSION" = "$LATEST_VERSION" ]; then
+        info "✓ Already up to date!"
+        exit 0
+    fi
+    
+    echo ""
+    echo -e "${YELLOW}Updating to ${LATEST_VERSION}...${NC}"
+    
+    # Detect OS and architecture
+    OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+    ARCH=$(uname -m)
+    case $ARCH in
+        x86_64) ARCH="amd64" ;;
+        aarch64|arm64) ARCH="arm64" ;;
+        *)
+            error "❌ Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+    esac
+    
+    # Download URL
+    DOWNLOAD_URL="https://github.com/${GITHUB_REPO}/releases/download/${LATEST_VERSION}/vpsdash-${OS}-${ARCH}.tar.gz"
+    
+    echo -e "${CYAN}Downloading ${OS}/${ARCH} binary...${NC}"
+    
+    # Download to temp directory
+    TMP_DIR=$(mktemp -d)
+    trap "rm -rf ${TMP_DIR}" EXIT
+    
+    curl -sSL "$DOWNLOAD_URL" | tar xz -C "$TMP_DIR"
+    
+    BINARY_FILE="${TMP_DIR}/vpsdash-${OS}-${ARCH}"
+    if [ ! -f "$BINARY_FILE" ]; then
+        error "❌ Binary not found in archive"
+        echo "Expected: vpsdash-${OS}-${ARCH}"
+        echo "Download URL: $DOWNLOAD_URL"
+        exit 1
+    fi
+    
+    # Determine install location
+    INSTALL_DIR="/usr/local/bin"
+    INSTALL_PATH="${INSTALL_DIR}/${BINARY_NAME}"
+    
+    # Also update the wrapper script itself
+    WRAPPER_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/vps-dashboard/vpsdash-wrapper.sh"
+    
+    echo -e "${CYAN}Installing binary to ${INSTALL_PATH}...${NC}"
+    
+    WAS_RUNNING=false
+    if is_running; then
+        WAS_RUNNING=true
+        echo -e "${YELLOW}Stopping running server...${NC}"
+        cmd_stop
+    fi
+    
+    # Install binary
+    if [ "$EUID" -ne 0 ]; then
+        sudo mv "$BINARY_FILE" "$INSTALL_PATH"
+        sudo chmod +x "$INSTALL_PATH"
+    else
+        mv "$BINARY_FILE" "$INSTALL_PATH"
+        chmod +x "$INSTALL_PATH"
+    fi
+    
+    # Also update wrapper script
+    echo -e "${CYAN}Updating wrapper script...${NC}"
+    WRAPPER_PATH="${INSTALL_DIR}/vpsdash"
+    if [ "$EUID" -ne 0 ]; then
+        sudo curl -sSL "$WRAPPER_URL" -o "$WRAPPER_PATH" 2>/dev/null || true
+        sudo chmod +x "$WRAPPER_PATH" 2>/dev/null || true
+    else
+        curl -sSL "$WRAPPER_URL" -o "$WRAPPER_PATH" 2>/dev/null || true
+        chmod +x "$WRAPPER_PATH" 2>/dev/null || true
+    fi
+    
+    echo ""
+    info "✓ Update complete!"
+    echo ""
+    echo -e "${CYAN}Version:${NC}    ${LATEST_VERSION}"
+    echo -e "${CYAN}Binary:${NC}     ${INSTALL_PATH}"
+    echo -e "${CYAN}Wrapper:${NC}    ${WRAPPER_PATH}"
+    echo -e "${CYAN}Config:${NC}     ${CONFIG_FILE} (preserved)"
+    echo -e "${CYAN}Database:${NC}   ${VPSDASH_HOME}/vpsdash.db (preserved)"
+    echo ""
+    
+    # Restart if it was running
+    if [ "$WAS_RUNNING" = true ]; then
+        echo -e "${YELLOW}Restarting server...${NC}"
+        cmd_start
+    else
+        warn "Server is stopped. Run 'vpsdash start' to start."
+    fi
+}
+
 # === Main dispatch ===
 
 case "${1:-start}" in
@@ -297,6 +425,9 @@ case "${1:-start}" in
     --version|-v)
         cmd_version
         ;;
+    update|upgrade)
+        cmd_update
+        ;;
     help|--help|-h)
         echo ""
         echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
@@ -313,6 +444,7 @@ case "${1:-start}" in
         echo -e "  ${CYAN}status${NC}     Check if running (shows PID, uptime, memory)"
         echo -e "  ${CYAN}logs${NC}       Tail logs in real-time (Ctrl+C to exit)"
         echo -e "  ${CYAN}config${NC}     Show config file & admin credentials"
+        echo -e "  ${CYAN}update${NC}     Download & install latest version from GitHub"
         echo -e "  ${CYAN}--version${NC}  Show version info"
         echo -e "  ${CYAN}help${NC}       Show this help message"
         echo ""
@@ -322,6 +454,7 @@ case "${1:-start}" in
         echo -e "  ${YELLOW}vpsdash logs${NC}         # View live logs"
         echo -e "  ${YELLOW}vpsdash stop${NC}         # Stop server"
         echo -e "  ${YELLOW}vpsdash restart${NC}     # Restart after config change"
+        echo -e "  ${YELLOW}vpsdash update${NC}       # Update to latest version from GitHub"
         echo -e "  ${YELLOW}vpsdash config${NC}      # Show credentials & config path"
         echo ""
         echo -e "${GREEN}FIRST RUN:${NC}"

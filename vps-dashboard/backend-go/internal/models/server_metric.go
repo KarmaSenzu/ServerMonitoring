@@ -31,6 +31,10 @@ type ServerMetric struct {
 	NetBytesRecv float64 `json:"net_bytes_recv"`
 	Uptime       float64 `json:"uptime"`
 	Error        string  `json:"error,omitempty"`
+	// RawStdout holds the raw SSH command output. Not persisted — used
+	// by the engine to extract system info (OS, architecture) after
+	// collection so it can auto-populate the server registry.
+	RawStdout    string  `json:"-"`
 }
 
 // ServerMetricRepo persists and retrieves ServerMetric rows.

@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -16,6 +16,7 @@ import {
   FiAlertTriangle,
   FiGrid,
   FiBox,
+  FiChevronDown,
 } from 'react-icons/fi'
 import { system, docker, tunnels, projects, events, backups, servers as serversApi } from '../api/endpoints.js'
 import DockerCard from '../components/DockerCard.jsx'
@@ -112,10 +113,21 @@ export default function Dashboard() {
   const queryClient = useQueryClient()
   const toast = useToast()
 
+  // Server selector state: null = local server, otherwise server ID
+  const [selectedServerId, setSelectedServerId] = useState(null)
+
   // Infrastructure Platform queries (Phase 1-12)
   const serversQ = useQuery({
     queryKey: ['servers'],
     queryFn: () => serversApi.list(),
+    refetchInterval: 30000,
+  })
+
+  // Remote server metrics (when a server is selected)
+  const remoteMetricsQ = useQuery({
+    queryKey: ['server-metrics', selectedServerId],
+    queryFn: () => serversApi.metrics(selectedServerId),
+    enabled: !!selectedServerId,
     refetchInterval: 30000,
   })
 
@@ -333,11 +345,17 @@ export default function Dashboard() {
     )
   }
 
-  const cpuUsage = stats?.cpu?.usagePercent
-  const cpuLoad = stats?.cpu?.load1
-  const memUsed = stats?.memory?.usedPercent
-  const diskUsed = stats?.disk?.usedPercent
-  const hostname = stats?.host?.hostname
+  const cpuUsage = selectedServerId ? (remoteMetricsQ.data?.cpu_usage ?? 0) : (stats?.cpu?.usagePercent ?? 0)
+  const cpuLoad = selectedServerId ? (remoteMetricsQ.data?.cpu_load1 ?? 0) : (stats?.cpu?.load1 ?? 0)
+  const memUsed = selectedServerId ? (remoteMetricsQ.data?.mem_percent ?? 0) : (stats?.memory?.usedPercent ?? 0)
+  const diskUsed = selectedServerId ? (remoteMetricsQ.data?.disk_percent ?? 0) : (stats?.disk?.usedPercent ?? 0)
+  const hostname = selectedServerId
+    ? (Array.isArray(serversQ.data) ? serversQ.data.find((s) => s.id === selectedServerId)?.name : null)
+    : (stats?.host?.hostname ?? null)
+
+  // Server selector dropdown
+  const serverList = Array.isArray(serversQ.data) ? serversQ.data : []
+  const selectedServer = serverList.find((s) => s.id === selectedServerId)
 
   return (
     <div className="dashboard">
@@ -348,6 +366,23 @@ export default function Dashboard() {
             <p>System monitoring, Docker &amp; Tunnel management</p>
           </div>
           <div className="header-actions">
+            {/* Server selector: switch between local & remote servers */}
+            <div className="server-selector">
+              <FiServer />
+              <select
+                value={selectedServerId || ''}
+                onChange={(e) => setSelectedServerId(e.target.value || null)}
+                className="server-select"
+              >
+                <option value="">🖥️ This Server (Local)</option>
+                {serverList.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.status === 'online' ? '🟢' : s.status === 'offline' ? '🔴' : '🟡'} {s.name} ({s.hostname})
+                  </option>
+                ))}
+              </select>
+              <FiChevronDown className="select-arrow" />
+            </div>
             {lastUpdated && (
               <span className="last-updated">Last updated {formatTimeOfDay(lastUpdated)}</span>
             )}
@@ -441,18 +476,47 @@ export default function Dashboard() {
         )
       })()}
 
-      {/* === Local Server Monitoring (existing) === */}
-      {stats && (
-        <div className="stats-grid">
+      {/* === Server Monitoring Stats === */}
+      {/* Shows local server metrics OR selected remote server metrics */}
+      {(() => {
+        // For remote servers, use metrics from remoteMetricsQ
+        // For local server, use stats from statsQ
+        const stats = selectedServerId ? remoteMetricsQ.data : statsQ.data
+        if (!stats && !selectedServerId) return null
+        if (selectedServerId && !remoteMetricsQ.data) {
+          return (
+            <div className="stats-grid">
+              <div className="stat-card glass">
+                <div className="stat-info">
+                  <span className="stat-label">{selectedServer?.name || 'Remote Server'}</span>
+                  <span className="stat-sub">
+                    {remoteMetricsQ.isLoading ? 'Connecting...' : 'No metrics yet. Waiting for first SSH poll...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )
+        }
+
+        // Normalize: remote metrics have flat fields (cpu_usage, mem_used),
+        // local stats have nested objects (cpu.usagePercent, memory.usedPercent)
+        const isRemote = !!selectedServerId
+
+        return (
+      <div className="stats-grid">
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.05s' }}>
-            <div className="stat-icon cpu">
-              <FiCpu />
+            <div className="stat-header">
+              <div className="stat-icon cpu">
+                <FiCpu />
+              </div>
+              <span className="stat-label">CPU Usage</span>
             </div>
             <div className="stat-info">
-              <span className="stat-label">CPU Usage</span>
               <span className="stat-value">{(cpuUsage ?? 0).toFixed(1)}%</span>
               <span className="stat-sub">
-                load {Number(cpuLoad ?? 0).toFixed(2)} / {stats.cpu?.cores ?? 0} cores
+                {isRemote
+                  ? `load ${Number(cpuLoad ?? 0).toFixed(2)}`
+                  : `load ${Number(cpuLoad ?? 0).toFixed(2)} / ${stats?.cpu?.cores ?? 0} cores`}
               </span>
             </div>
             <div className="stat-bar">
@@ -464,14 +528,18 @@ export default function Dashboard() {
           </div>
 
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.1s' }}>
-            <div className="stat-icon ram">
-              <FiHardDrive />
+            <div className="stat-header">
+              <div className="stat-icon ram">
+                <FiHardDrive />
+              </div>
+              <span className="stat-label">Memory</span>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Memory</span>
               <span className="stat-value">{(memUsed ?? 0).toFixed(1)}%</span>
               <span className="stat-sub">
-                {formatBytes(stats.memory?.used)} / {formatBytes(stats.memory?.total)}
+                {isRemote
+                  ? `${formatBytes(remoteMetricsQ.data?.mem_used)} / ${formatBytes(remoteMetricsQ.data?.mem_total)}`
+                  : `${formatBytes(stats?.memory?.used)} / ${formatBytes(stats?.memory?.total)}`}
               </span>
             </div>
             <div className="stat-bar">
@@ -483,14 +551,18 @@ export default function Dashboard() {
           </div>
 
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.15s' }}>
-            <div className="stat-icon storage">
-              <FiDatabase />
+            <div className="stat-header">
+              <div className="stat-icon storage">
+                <FiDatabase />
+              </div>
+              <span className="stat-label">Storage</span>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Storage</span>
               <span className="stat-value">{(diskUsed ?? 0).toFixed(1)}%</span>
               <span className="stat-sub">
-                {formatBytes(stats.disk?.used)} / {formatBytes(stats.disk?.total)}
+                {isRemote
+                  ? `${formatBytes(remoteMetricsQ.data?.disk_used)} / ${formatBytes(remoteMetricsQ.data?.disk_total)}`
+                  : `${formatBytes(stats?.disk?.used)} / ${formatBytes(stats?.disk?.total)}`}
               </span>
             </div>
             <div className="stat-bar">
@@ -502,35 +574,30 @@ export default function Dashboard() {
           </div>
 
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.2s' }}>
-            <div className="stat-icon uptime">
-              <FiClock />
+            <div className="stat-header">
+              <div className="stat-icon uptime">
+                <FiClock />
+              </div>
+              <span className="stat-label">Uptime</span>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Uptime</span>
-              <span className="stat-value">{formatUptime(stats.host?.uptime)}</span>
+              <span className="stat-value">
+                {isRemote ? formatUptime(remoteMetricsQ.data?.uptime) : formatUptime(stats?.host?.uptime)}
+              </span>
               <span className="stat-sub">{hostname || '-'}</span>
             </div>
           </div>
 
-          <div className="stat-card glass animate-in" style={{ animationDelay: '0.25s' }}>
-            <div className="stat-icon tunnel">
-              <FiCloud />
-            </div>
-            <div className="stat-info">
-              <span className="stat-label">CF Tunnels</span>
-              <span className="stat-value">
-                {runningTunnels}/{tunnelList.length}
-              </span>
-              <span className="stat-sub">{totalRoutes} routes active</span>
-            </div>
-          </div>
-
+          {/* Network card — only show for local server (remote doesn't have per-sec rates) */}
+          {!isRemote && (
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.3s' }}>
-            <div className="stat-icon network">
-              <FiActivity />
+            <div className="stat-header">
+              <div className="stat-icon network">
+                <FiActivity />
+              </div>
+              <span className="stat-label">Network</span>
             </div>
             <div className="stat-info">
-              <span className="stat-label">Network</span>
               <span className="stat-value net-stat">
                 <span className="net-down">↓ {humanizeBytesPerSec(latestRates?.rx)}</span>
                 <span className="net-up">↑ {humanizeBytesPerSec(latestRates?.tx)}</span>
@@ -538,6 +605,48 @@ export default function Dashboard() {
               <span className="stat-sub">
                 {latestRates ? 'rx / tx (last 1m)' : 'awaiting samples'}
               </span>
+            </div>
+          </div>
+          )}
+
+          {/* For remote: show network bytes (cumulative) */}
+          {isRemote && (
+          <div className="stat-card glass animate-in" style={{ animationDelay: '0.3s' }}>
+            <div className="stat-header">
+              <div className="stat-icon network">
+                <FiActivity />
+              </div>
+              <span className="stat-label">Network (total)</span>
+            </div>
+            <div className="stat-info">
+              <span className="stat-value net-stat">
+                <span className="net-down">↓ {formatBytes(remoteMetricsQ.data?.net_bytes_recv)}</span>
+                <span className="net-up">↑ {formatBytes(remoteMetricsQ.data?.net_bytes_sent)}</span>
+              </span>
+              <span className="stat-sub">cumulative rx / tx</span>
+            </div>
+          </div>
+          )}
+
+      </div>
+        )
+      })()}
+
+      {/* Local-only cards: tunnels, alerts, deployments, backups */}
+      {!selectedServerId && (
+        <div className="stats-grid">
+          <div className="stat-card glass animate-in" style={{ animationDelay: '0.25s' }}>
+            <div className="stat-header">
+              <div className="stat-icon tunnel">
+                <FiCloud />
+              </div>
+              <span className="stat-label">CF Tunnels</span>
+            </div>
+            <div className="stat-info">
+              <span className="stat-value">
+                {runningTunnels}/{tunnelList.length}
+              </span>
+              <span className="stat-sub">{totalRoutes} routes active</span>
             </div>
           </div>
 

@@ -593,21 +593,34 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
     <Modal title={title} onClose={onClose} size="normal">
       <form className="modal-form" onSubmit={handleSubmit}>
         <div className="modal-grid">
+          {/* === REQUIRED: Connection === */}
           <div className="form-group">
-            <label>Name</label>
-            <input type="text" autoFocus value={form.name} onChange={set('name')} required />
+            <label>Name <span className="field-required">*</span></label>
+            <input type="text" autoFocus value={form.name} onChange={set('name')} required placeholder="prod-web-01" />
+            <p className="field-help">
+              Nama untuk mengidentifikasi server ini di dashboard. Bebas, tapi sebaiknya gunakan format yang konsisten
+              (misal: <code>role-environment-number</code>). Nama ini dipakai di seluruh UI, tag, dan log.
+            </p>
           </div>
+
           <div className="form-group">
-            <label>Hostname / IP</label>
+            <label>Hostname / IP <span className="field-required">*</span></label>
             <input
               type="text"
               className="mono"
-              placeholder="server-01.example.com or 10.0.0.5"
+              placeholder="server-01.example.com atau 10.0.0.5"
               value={form.hostname}
               onChange={set('hostname')}
               required
             />
+            <p className="field-help">
+              Alamat yang dipakai sistem untuk SSH ke server. Bisa domain (<code>db1.example.com</code>)
+              atau IP langsung (<code>10.0.0.5</code>). Pastikan ini bisa di-resolve/dijangkau
+              dari server tempat dashboard berjalan.
+            </p>
           </div>
+
+          {/* === OPTIONAL: Metadata === */}
           <div className="form-group">
             <label>IP address (optional)</label>
             <input
@@ -617,15 +630,32 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
               value={form.ip_address}
               onChange={set('ip_address')}
             />
+            <p className="field-help">
+              IP publik/privat server. Dipakai hanya untuk tampilan di UI dan pencarian.
+              Bisa dikosongkan jika hostname sudah berupa IP.
+            </p>
           </div>
+
           <div className="form-group">
             <label>SSH port</label>
             <input type="number" min="1" max="65535" value={form.ssh_port} onChange={set('ssh_port')} />
+            <p className="field-help">
+              Port SSH server. Default <code>22</code>. Ubah jika server Anda pakai port
+              non-standar (misal <code>2222</code> untuk alasan keamanan).
+            </p>
           </div>
+
           <div className="form-group">
-            <label>SSH username</label>
+            <label>SSH username <span className="field-required">*</span></label>
             <input type="text" className="mono" placeholder="deploy" value={form.ssh_username} onChange={set('ssh_username')} required />
+            <p className="field-help">
+              User yang dipakai untuk login SSH ke server. Contoh: <code>root</code>, <code>ubuntu</code>,
+              atau <code>deploy</code>. User ini harus punya akses ke perintah yang dibutuhkan
+              untuk monitoring (misal <code>top</code>, <code>df</code>, <code>docker</code>).
+            </p>
           </div>
+
+          {/* === CREDENTIALS === */}
           <div className="form-group">
             <label>Credential type</label>
             <select value={form.credential_type} onChange={set('credential_type')}>
@@ -635,17 +665,34 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
                 </option>
               ))}
             </select>
+            <p className="field-help">
+              <strong>SSH key (reference):</strong> Pakai private key yang sudah terdaftar di menu SSH Keys.
+              <br />
+              <strong>Password (reference):</strong> Password diambil dari environment variable
+              <code>VPSD_SSH_PASSWORD_&lt;REF&gt;</code> di server dashboard — bukan ditulis di sini.
+              <br />
+              <strong>SSH agent:</strong> Pakai <code>SSH_AUTH_SOCK</code> yang sedang aktif di server dashboard.
+            </p>
           </div>
+
           <div className="form-group">
             <label>Credential reference</label>
             <input
               type="text"
               className="mono"
-              placeholder="e.g. production-key (name only — never the secret itself)"
+              placeholder="production-key (nama saja — bukan secret)"
               value={form.credential_ref}
               onChange={set('credential_ref')}
             />
+            <p className="field-help">
+              Nama referensi (bukan password/key-nya!). Untuk SSH key: nama key yang didaftarkan
+              di menu SSH Keys. Untuk password: nama env var yang sudah diset di server dashboard
+              (misal <code>prod</code> → <code>VPSD_SSH_PASSWORD_PROD</code>).
+              <strong className="field-warn">Jangan masukkan password atau private key di sini!</strong>
+            </p>
           </div>
+
+          {/* === ENVIRONMENT === */}
           <div className="form-group">
             <label>Environment</label>
             <select value={form.environment} onChange={set('environment')}>
@@ -653,31 +700,78 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
               <option value="staging">staging</option>
               <option value="production">production</option>
             </select>
+            <p className="field-help">
+              Lingkungan server. Memengaruhi <strong>threshold alert</strong> dan
+              <strong>health check multiplier</strong>. Contoh: di development,
+              health check 3x lebih lambat dan alert level lebih rendah.
+            </p>
           </div>
+
+          {/* === OPTIONAL: System Info — auto-detected via SSH === */}
           <div className="form-group">
-            <label>Operating system</label>
-            <input type="text" placeholder="Ubuntu 24.04" value={form.operating_system} onChange={set('operating_system')} />
+            <label>Operating system <span className="field-auto">auto-detected</span></label>
+            <input
+              type="text"
+              placeholder="Terisi otomatis saat SSH berhasil"
+              value={form.operating_system}
+              onChange={set('operating_system')}
+              disabled
+              className="auto-field"
+            />
+            <p className="field-help">
+              Terisi otomatis dari server saat koneksi SSH pertama berhasil.
+              Tidak perlu diisi manual.
+            </p>
           </div>
+
           <div className="form-group">
-            <label>Architecture</label>
-            <input type="text" placeholder="amd64 / arm64" value={form.architecture} onChange={set('architecture')} />
+            <label>Architecture <span className="field-auto">auto-detected</span></label>
+            <input
+              type="text"
+              placeholder="Terisi otomatis saat SSH berhasil"
+              value={form.architecture}
+              onChange={set('architecture')}
+              disabled
+              className="auto-field"
+            />
+            <p className="field-help">
+              Terisi otomatis dari server (misal <code>amd64</code> atau <code>arm64</code>).
+            </p>
           </div>
+
+          {/* === CLOUD PROVIDER === */}
           <div className="form-group">
-            <label>Provider</label>
-            <input type="text" placeholder="aws / hetzner / ..." value={form.provider} onChange={set('provider')} />
+            <label>Provider (optional)</label>
+            <input type="text" placeholder="aws / hetzner / digitalocean" value={form.provider} onChange={set('provider')} />
+            <p className="field-help">
+              Nama cloud provider. Dipakai untuk grouping dan filter di UI.
+              Bisa diisi manual atau otomatis dari fitur Cloud Discovery.
+            </p>
           </div>
+
           <div className="form-group">
-            <label>Provider instance ID</label>
+            <label>Provider instance ID (optional)</label>
             <input
               type="text"
               className="mono"
-              placeholder="i-0abc123..."
+              placeholder="i-0abc123... (dari console cloud provider)"
               value={form.provider_instance_id}
               onChange={set('provider_instance_id')}
             />
+            <p className="field-help">
+              ID instance di cloud provider (misal <code>i-0abc123</code> untuk AWS).
+              Dipakai untuk sinkronisasi dengan Cloud Discovery. Bisa dikosongkan.
+            </p>
           </div>
+
+          {/* === TAGS === */}
           <div className="form-group full">
             <label>Tags</label>
+            <p className="field-help">
+              Kategori bebas untuk grouping dan filter. Contoh: <code>web</code>,
+              <code>database</code>, <code>production</code>, <code>critical</code>.
+              Enter untuk menambah, klik tag untuk hapus.
+            </p>
             <div className="tag-editor">
               {form.tags.map((t) => (
                 <button key={t} type="button" className="mini-tag removable" onClick={() => removeTag(t)}>
@@ -714,17 +808,45 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
               </div>
             )}
           </div>
+
+          {/* === NOTES === */}
           <div className="form-group full">
-            <label>Notes</label>
-            <textarea rows={2} value={form.notes} onChange={set('notes')} />
+            <label>Notes (optional)</label>
+            <textarea rows={2} value={form.notes} onChange={set('notes')} placeholder="Catatan internal tentang server ini..." />
+            <p className="field-help">
+              Catatan bebas untuk tim. Misal: "Restart setiap hari Senin 3AM" atau
+              "Disk hampir penuh, perlu upgrade".
+            </p>
           </div>
+
+          {/* === ENABLED === */}
           <div className="form-group full checkbox-group">
             <label className="checkbox-label">
               <input type="checkbox" checked={form.enabled} onChange={set('enabled')} />
               Enabled (include in monitoring &amp; operations)
             </label>
+            <p className="field-help">
+              Jika dicentang: server akan dimonitor otomatis (metrics tiap 60 detik),
+              masuk di alert evaluation, dan bisa dioperasikan (container, command, terminal).
+              Jika tidak: server "paused" — tidak dimonitor tapi tetap di registry.
+            </p>
           </div>
         </div>
+
+        {/* === INFO BANNER: What happens next === */}
+        <div className="form-info-banner">
+          <span className="info-icon">ℹ️</span>
+          <div>
+            <strong>Setelah server didaftarkan:</strong>
+            <ul>
+              <li>Sistem akan coba SSH setiap 60 detik untuk ambil metrics (CPU, RAM, disk, network)</li>
+              <li>Server muncul di dashboard dengan status <code>unknown</code> sampai koneksi SSH pertama berhasil</li>
+              <li>Jika koneksi gagal, status jadi <code>offline</code> dan event error dicatat</li>
+              <li>Anda bisa test koneksi SSH langsung dari menu Servers → Test SSH</li>
+            </ul>
+          </div>
+        </div>
+
         {error && <div className="modal-error">{error}</div>}
         <div className="modal-actions">
           <button type="button" className="ghost-btn" onClick={onClose} disabled={submitting}>

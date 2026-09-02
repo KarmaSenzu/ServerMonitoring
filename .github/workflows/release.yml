@@ -1,0 +1,136 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+            suffix: .exe
+          - goos: windows
+            goarch: arm64
+            suffix: .exe
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build frontend
+        working-directory: vps-dashboard/frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Copy frontend dist to embed tree
+        working-directory: vps-dashboard
+        run: |
+          mkdir -p backend-go/internal/httpx/dist
+          cp -r frontend/dist/* backend-go/internal/httpx/dist/
+
+      - name: Build binary
+        working-directory: vps-dashboard/backend-go
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF_NAME:-dev}
+          COMMIT=${GITHUB_SHA::7}
+          BUILD_TIME=$(date -u '+%Y-%m-%d_%H:%M:%S')
+          
+          LDFLAGS="-s -w"
+          LDFLAGS="${LDFLAGS} -X 'vps-dashboard-api/internal/app.Version=${VERSION}'"
+          LDFLAGS="${LDFLAGS} -X 'vps-dashboard-api/internal/app.BuildCommit=${COMMIT}'"
+          LDFLAGS="${LDFLAGS} -X 'vps-dashboard-api/internal/app.BuildTime=${BUILD_TIME}'"
+          
+          BINARY_NAME="vpsdash-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+          
+          go build \
+            -ldflags="${LDFLAGS}" \
+            -o "../${BINARY_NAME}" \
+            cmd/api/main.go
+          
+          echo "Built: ${BINARY_NAME}"
+          ls -lh "../${BINARY_NAME}"
+
+      - name: Create archive
+        working-directory: vps-dashboard
+        run: |
+          BINARY="vpsdash-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+          ARCHIVE="vpsdash-${{ matrix.goos }}-${{ matrix.goarch }}"
+          
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip -q "${ARCHIVE}.zip" "${BINARY}"
+          else
+            tar czf "${ARCHIVE}.tar.gz" "${BINARY}"
+          fi
+          
+          ls -lh "${ARCHIVE}".*
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vpsdash-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: vps-dashboard/vpsdash-${{ matrix.goos }}-${{ matrix.goarch }}.*
+          retention-days: 5
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: List artifacts
+        run: find artifacts -type f | head -20
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          sha256sum *.tar.gz *.zip 2>/dev/null > SHA256SUMS || true
+          cat SHA256SUMS
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artifacts/*.tar.gz
+            artifacts/*.zip
+            artifacts/SHA256SUMS

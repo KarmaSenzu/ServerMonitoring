@@ -70,6 +70,7 @@ type serverDTO struct {
 	SSHUsername        string   `json:"ssh_username"`
 	CredentialType     string   `json:"credential_type"`
 	CredentialRef      string   `json:"credential_ref"`
+	CredentialPassword string   `json:"credential_password"`
 	OperatingSystem    string   `json:"operating_system"`
 	Architecture       string   `json:"architecture"`
 	Provider           string   `json:"provider"`
@@ -97,6 +98,7 @@ func (d serverDTO) toServer() models.Server {
 		SSHUsername:        d.SSHUsername,
 		CredentialType:     d.CredentialType,
 		CredentialRef:      d.CredentialRef,
+		CredentialPassword: d.CredentialPassword,
 		OperatingSystem:    d.OperatingSystem,
 		Architecture:       d.Architecture,
 		Provider:           d.Provider,
@@ -186,9 +188,11 @@ type serverResponse struct {
 }
 
 func sanitizeServer(s models.Server) serverResponse {
+	// Never return the password in the API response
+	s.CredentialPassword = ""
 	return serverResponse{
 		Server:            s,
-		CredentialPresent: strings.TrimSpace(s.CredentialRef) != "",
+		CredentialPresent: strings.TrimSpace(s.CredentialRef) != "" || s.CredentialPassword != "",
 	}
 }
 

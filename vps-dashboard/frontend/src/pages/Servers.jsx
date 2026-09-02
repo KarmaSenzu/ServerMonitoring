@@ -526,7 +526,7 @@ export default function ServersPage() {
 
 const CREDENTIAL_TYPES = [
   { value: 'ssh_key', label: 'SSH key (reference)' },
-  { value: 'password', label: 'Password (reference)' },
+  { value: 'password', label: 'Password (direct input)' },
   { value: 'agent', label: 'SSH agent' },
 ]
 
@@ -539,6 +539,7 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
     ssh_username: server?.ssh_username || '',
     credential_type: server?.credential_type || 'ssh_key',
     credential_ref: server?.credential_ref || '',
+    credential_password: '',  // Always start empty for security
     operating_system: server?.operating_system || '',
     architecture: server?.architecture || '',
     provider: server?.provider || '',
@@ -549,6 +550,7 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
     tags: server?.tags ? [...server.tags] : [],
   }))
   const [tagInput, setTagInput] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
@@ -577,11 +579,17 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
     setSubmitting(true)
     setError('')
     try {
-      await onSubmit({
+      const payload = {
         ...form,
         ssh_port: Number(form.ssh_port) || 22,
         tags: form.tags,
-      })
+      }
+      // Only send credential_password when type is password
+      // (don't send empty string for other credential types)
+      if (form.credential_type !== 'password') {
+        delete payload.credential_password
+      }
+      await onSubmit(payload)
     } catch (err) {
       setError(describeError(err, 'Save failed'))
     } finally {
@@ -668,29 +676,67 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
             <p className="field-help">
               <strong>SSH key (reference):</strong> Pakai private key yang sudah terdaftar di menu SSH Keys.
               <br />
-              <strong>Password (reference):</strong> Password diambil dari environment variable
-              <code>VPSD_SSH_PASSWORD_&lt;REF&gt;</code> di server dashboard — bukan ditulis di sini.
+              <strong>Password (direct input):</strong> Masukkan password SSH langsung di field password di bawah.
               <br />
               <strong>SSH agent:</strong> Pakai <code>SSH_AUTH_SOCK</code> yang sedang aktif di server dashboard.
             </p>
           </div>
 
-          <div className="form-group">
-            <label>Credential reference</label>
-            <input
-              type="text"
-              className="mono"
-              placeholder="production-key (nama saja — bukan secret)"
-              value={form.credential_ref}
-              onChange={set('credential_ref')}
-            />
-            <p className="field-help">
-              Nama referensi (bukan password/key-nya!). Untuk SSH key: nama key yang didaftarkan
-              di menu SSH Keys. Untuk password: nama env var yang sudah diset di server dashboard
-              (misal <code>prod</code> → <code>VPSD_SSH_PASSWORD_PROD</code>).
-              <strong className="field-warn">Jangan masukkan password atau private key di sini!</strong>
-            </p>
-          </div>
+          {/* Password field — only show when credential_type = password */}
+          {form.credential_type === 'password' && (
+            <div className="form-group">
+              <label>Password <span className="field-required">*</span></label>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="mono"
+                  placeholder="Masukkan password SSH server"
+                  value={form.credential_password}
+                  onChange={set('credential_password')}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+              <p className="field-help">
+                Password SSH untuk user <code>{form.ssh_username || 'username'}</code>.
+                Disimpan di database server dashboard. Kosongkan jika mau pakai
+                env var <code>VPSD_SSH_PASSWORD_&lt;REF&gt;</code> instead (isi Credential reference di bawah).
+              </p>
+            </div>
+          )}
+
+          {/* Credential reference — only show when NOT using direct password, OR for ssh_key/agent */}
+          {form.credential_type !== 'password' || form.credential_password === '' ? (
+            <div className="form-group">
+              <label>Credential reference {form.credential_type === 'password' ? '(optional, env var fallback)' : ''}</label>
+              <input
+                type="text"
+                className="mono"
+                placeholder={form.credential_type === 'password'
+                  ? "nama env var (opsional, kalau password di atas kosong)"
+                  : "production-key (nama saja — bukan secret)"
+                }
+                value={form.credential_ref}
+                onChange={set('credential_ref')}
+              />
+              <p className="field-help">
+                {form.credential_type === 'password' ? (
+                  <>Hanya dipakai jika password di atas kosong. Sistem cari env var <code>VPSD_SSH_PASSWORD_&lt;REF&gt;</code>.</>
+                ) : (
+                  <>Nama referensi (bukan password/key-nya!). Untuk SSH key: nama key yang didaftarkan
+                  di menu SSH Keys.</>
+                )}
+                <strong className="field-warn">Jangan masukkan password atau private key di sini!</strong>
+              </p>
+            </div>
+          ) : null}
 
           {/* === ENVIRONMENT === */}
           <div className="form-group">

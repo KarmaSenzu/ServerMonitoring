@@ -24,9 +24,10 @@ const serverTimeout = 8 * time.Second
 // under a group that already requires auth; write routes additionally
 // require RequireRole("admin") at the caller.
 type ServerHandler struct {
-	App    *app.App
-	Repo   *models.ServerRepo
+	App     *app.App
+	Repo    *models.ServerRepo
 	Metrics *models.ServerMetricRepo
+	Discoveries *models.DiscoveryRepo
 }
 
 // NewServerHandler constructs a ServerHandler with a repo bound to
@@ -37,9 +38,10 @@ func NewServerHandler(a *app.App) *ServerHandler {
 		metricsRepo = models.NewServerMetricRepo(a.DB)
 	}
 	return &ServerHandler{
-		App:     a,
-		Repo:    models.NewServerRepo(a.DB),
-		Metrics: metricsRepo,
+		App:         a,
+		Repo:        models.NewServerRepo(a.DB),
+		Metrics:     metricsRepo,
+		Discoveries: models.NewDiscoveryRepo(a.DB),
 	}
 }
 
@@ -50,6 +52,7 @@ func (h *ServerHandler) RegisterReads(rg *gin.RouterGroup) {
 	rg.GET("/servers/tags", h.listTags)
 	rg.GET("/servers/:id/metrics", h.latestMetric)
 	rg.GET("/servers/:id/history", h.metricHistory)
+	rg.GET("/servers/:id/discovery", h.getDiscovery)
 }
 
 // RegisterWrites mounts the mutating server routes. Caller is
@@ -509,4 +512,38 @@ func (h *ServerHandler) metricHistory(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"data": rows})
+}
+
+// getDiscovery returns auto-discovered services (PM2, Docker, tunnels,
+// systemd, ports) for a server. This data is collected automatically
+// via SSH during monitoring — no manual input needed.
+func (h *ServerHandler) getDiscovery(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), serverTimeout)
+	defer cancel()
+
+	id := c.Param("id")
+	if _, err := h.Repo.Get(ctx, id); err != nil {
+		if errors.Is(err, models.ErrServerNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "not_found"})
+			return
+		}
+		h.serverError(c, "server.discovery.lookup", err)
+		return
+	}
+
+	discovery, err := h.Discoveries.Get(ctx, id)
+	if err != nil {
+		h.serverError(c, "server.discovery", err)
+		return
+	}
+
+	if discovery == nil {
+		c.JSON(http.StatusOK, gin.H{
+			"data": nil,
+			"message": "No discovery data yet. Data will appear after the first successful SSH connection.",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": discovery})
 }

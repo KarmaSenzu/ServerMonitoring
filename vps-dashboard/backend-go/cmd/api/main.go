@@ -229,12 +229,14 @@ func run() error {
 
 	// Infrastructure Platform (Phase 3): remote monitoring engine.
 	metricsRepo := models.NewServerMetricRepo(conn)
+	discoveryRepo := models.NewDiscoveryRepo(conn)
 	remoteCollector := remote.NewCollector(sshService)
 	remoteEngine := remote.NewEngine(
 		logger,
 		serversRepo,
 		metricsRepo,
 		eventsRepo,
+		discoveryRepo,
 		remoteCollector,
 		remote.EngineConfig{
 			Interval:       cfg.RemotePollInterval,

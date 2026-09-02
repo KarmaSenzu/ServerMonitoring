@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -226,6 +227,9 @@ func run() error {
 		return err
 	}
 	sshService := ssh.NewService(sshKeys)
+
+	// Persist TOFU host keys to disk so they survive restarts (MITM protection).
+	sshService.SetKnownHostsPath(filepath.Join(cfg.SSHKeysDir, "known_hosts"))
 
 	// Infrastructure Platform (Phase 3): remote monitoring engine.
 	metricsRepo := models.NewServerMetricRepo(conn)

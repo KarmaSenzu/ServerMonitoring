@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"vps-dashboard-api/internal/app"
+	"vps-dashboard-api/internal/crypto"
 	"vps-dashboard-api/internal/httpx/middleware"
 	"vps-dashboard-api/internal/models"
 )
@@ -93,6 +94,17 @@ func (d serverDTO) toServer() models.Server {
 	if tags == nil {
 		tags = []string{}
 	}
+	// Encrypt credential_password before storing in DB
+	credPassword := d.CredentialPassword
+	if credPassword != "" {
+		key := crypto.GetEncryptionKey()
+		if key != nil {
+			if encrypted, err := crypto.Encrypt(credPassword, key); err == nil {
+				credPassword = encrypted
+			}
+			// If encryption fails, fall back to plaintext (logged in handler)
+		}
+	}
 	return models.Server{
 		Name:               d.Name,
 		Hostname:           d.Hostname,
@@ -101,7 +113,7 @@ func (d serverDTO) toServer() models.Server {
 		SSHUsername:        d.SSHUsername,
 		CredentialType:     d.CredentialType,
 		CredentialRef:      d.CredentialRef,
-		CredentialPassword: d.CredentialPassword,
+		CredentialPassword: credPassword,
 		OperatingSystem:    d.OperatingSystem,
 		Architecture:       d.Architecture,
 		Provider:           d.Provider,

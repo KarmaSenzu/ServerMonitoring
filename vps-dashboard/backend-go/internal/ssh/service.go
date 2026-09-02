@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/crypto/ssh"
 
+	"vps-dashboard-api/internal/crypto"
 	"vps-dashboard-api/internal/models"
 )
 
@@ -61,18 +63,87 @@ type Service struct {
 	CommandTimeout time.Duration
 
 	// knownHosts guards remembered host key fingerprints (TOFU).
-	mu         sync.Mutex
-	knownHosts map[string]string // "host:port" → fingerprint
+	// Persisted to knownHostsPath on first-use and loaded at startup.
+	mu             sync.Mutex
+	knownHosts     map[string]string // "host:port" → fingerprint
+	knownHostsPath string             // path to persisted known_hosts file
 }
 
 // NewService constructs an SSH Service bound to a key store.
 func NewService(keys *KeyStore) *Service {
-	return &Service{
+	svc := &Service{
 		Keys:           keys,
 		ConnectTimeout: DefaultConnectTimeout,
 		CommandTimeout: DefaultCommandTimeout,
 		knownHosts:     make(map[string]string),
 	}
+	// Auto-load persisted known_hosts from disk
+	svc.loadKnownHosts()
+	return svc
+}
+
+// SetKnownHostsPath sets the path to persist known_hosts (TOFU).
+// Called during startup to enable host key persistence across restarts.
+func (svc *Service) SetKnownHostsPath(path string) {
+	svc.mu.Lock()
+	svc.knownHostsPath = path
+	svc.mu.Unlock()
+	svc.loadKnownHosts()
+}
+
+// loadKnownHosts reads the persisted known_hosts file into memory.
+// Format: one "host:port fingerprint" per line.
+func (svc *Service) loadKnownHosts() {
+	svc.mu.Lock()
+	path := svc.knownHostsPath
+	svc.mu.Unlock()
+
+	if path == "" {
+		return
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return // File doesn't exist yet — fine
+	}
+
+	svc.mu.Lock()
+	defer svc.mu.Unlock()
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, " ", 2)
+		if len(parts) == 2 {
+			svc.knownHosts[parts[0]] = parts[1]
+		}
+	}
+}
+
+// saveKnownHosts persists the known_hosts map to disk (0600 permissions).
+func (svc *Service) saveKnownHosts() {
+	svc.mu.Lock()
+	path := svc.knownHostsPath
+	hosts := make(map[string]string, len(svc.knownHosts))
+	for k, v := range svc.knownHosts {
+		hosts[k] = v
+	}
+	svc.mu.Unlock()
+
+	if path == "" {
+		return
+	}
+
+	// Ensure directory exists
+	dir := filepath.Dir(path)
+	_ = os.MkdirAll(dir, 0700)
+
+	var buf bytes.Buffer
+	for host, fp := range hosts {
+		buf.WriteString(host + " " + fp + "\n")
+	}
+	_ = os.WriteFile(path, buf.Bytes(), 0600)
 }
 
 // TestResult describes the outcome of a connectivity test.
@@ -107,8 +178,9 @@ func endpoint(s models.Server) string {
 }
 
 // hostKeyCallback implements trust-on-first-use: on the first
-// connection the fingerprint is remembered; later connections must
-// present the same key, otherwise ErrHostKeyChanged.
+// connection the fingerprint is remembered and persisted to disk;
+// later connections must present the same key, otherwise ErrHostKeyChanged
+// (potential MITM) is returned.
 func (svc *Service) hostKeyCallback(hostport string) ssh.HostKeyCallback {
 	return func(_ string, _ net.Addr, key ssh.PublicKey) error {
 		fp := fingerprintHostKey(key)
@@ -116,12 +188,15 @@ func (svc *Service) hostKeyCallback(hostport string) ssh.HostKeyCallback {
 		remembered, ok := svc.knownHosts[hostport]
 		svc.mu.Unlock()
 		if !ok {
+			// First use — trust and persist
 			svc.mu.Lock()
 			svc.knownHosts[hostport] = fp
 			svc.mu.Unlock()
+			svc.saveKnownHosts()
 			return nil
 		}
 		if remembered != fp {
+			// Host key changed — potential MITM. This is a security event.
 			return fmt.Errorf("%w: remembered %s, got %s", ErrHostKeyChanged, remembered, fp)
 		}
 		return nil
@@ -158,8 +233,18 @@ func (svc *Service) authMethods(s models.Server) ([]ssh.AuthMethod, error) {
 		return []ssh.AuthMethod{ssh.PublicKeys(signer)}, nil
 
 	case models.ServerCredentialPassword:
-		// First check for direct password (stored in credential_password field)
+		// First check for direct password (stored encrypted in credential_password field)
 		if s.CredentialPassword != "" {
+			// Decrypt the password using JWT_SECRET-derived key
+			key := crypto.GetEncryptionKey()
+			if key != nil {
+				decrypted, err := crypto.Decrypt(s.CredentialPassword, key)
+				if err != nil {
+					return nil, fmt.Errorf("%w: password decryption failed: %s", ErrCredentialNotConfigured, err.Error())
+				}
+				return []ssh.AuthMethod{ssh.Password(decrypted)}, nil
+			}
+			// Backward compat: no JWT_SECRET = treat as plaintext
 			return []ssh.AuthMethod{ssh.Password(s.CredentialPassword)}, nil
 		}
 		// Fall back to env var reference: VPSD_SSH_PASSWORD_<REF>

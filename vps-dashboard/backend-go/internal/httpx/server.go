@@ -81,7 +81,6 @@ func BuildEngine(a *app.App) *gin.Engine {
 	tunnelH.Register(protected)
 	dockerH.RegisterReads(protected)
 	pm2H.RegisterReads(protected)
-	genH.Register(protected)
 	projectsH.RegisterReads(protected)
 	discoveryH.RegisterReads(protected)
 	eventsH.RegisterReads(protected)
@@ -122,6 +121,9 @@ func BuildEngine(a *app.App) *gin.Engine {
 	// Command execution + preview (operator-level).
 	// Snippet CRUD stays admin-only.
 	commandsH.RegisterOperatorWrites(operatorOnly)
+
+	// Generator (operator-level — renders command strings, no execution).
+	genH.Register(operatorOnly)
 
 	// Admin-only routes (manage users, credentials, providers, config).
 	adminOnly := r.Group("")

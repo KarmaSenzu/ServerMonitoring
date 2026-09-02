@@ -42,18 +42,21 @@ error() { echo -e "${RED}$1${NC}"; }
 
 # Check if binary exists
 find_binary() {
-    # Check common locations
+    # Check common locations for vpsdashd (the Go binary)
     for path in "/usr/local/bin/$BINARY_NAME" "/usr/bin/$BINARY_NAME" "$HOME/.local/bin/$BINARY_NAME" "./$BINARY_NAME"; do
         if [ -x "$path" ]; then
             echo "$path"
             return 0
         fi
     done
-    # Check if vpsdash exists in PATH (backwards compat)
-    if command -v vpsdash &>/dev/null && [ "$(command -v vpsdash)" != "$0" ]; then
-        # The binary is named 'vpsdash' not 'vpsdashd'
-        echo "$(command -v vpsdash)"
-        return 0
+    # Check if there's a 'vpsdash' binary in PATH that is NOT this wrapper script
+    if command -v vpsdash &>/dev/null; then
+        VPSDASH_PATH=$(command -v vpsdash)
+        # Make sure it's not the wrapper script itself
+        if [ "$VPSDASH_PATH" != "$0" ] && [ "$VPSDASH_PATH" != "/usr/local/bin/vpsdash" ]; then
+            echo "$VPSDASH_PATH"
+            return 0
+        fi
     fi
     return 1
 }
@@ -165,10 +168,22 @@ cmd_start() {
     
     echo -e "${CYAN}Starting VPS Dashboard...${NC}"
     
+    # Start in background with proper environment
+    export ENV="${ENV:-production}"
+    export HTTP_ADDR="${HTTP_ADDR:-:3001}"
+    export DB_PATH="${DB_PATH:-$VPSDASH_HOME/vpsdash.db}"
+    export JWT_SECRET="${JWT_SECRET}"
+    export BOOTSTRAP_ADMIN_USERNAME="${BOOTSTRAP_ADMIN_USERNAME:-admin}"
+    export BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD}"
+    export LOG_LEVEL="${LOG_LEVEL:-info}"
+    export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3001,http://127.0.0.1:3001,http://0.0.0.0:3001}"
+    export BACKUP_DIR="${BACKUP_DIR:-$VPSDASH_HOME/backups}"
+    export SSH_KEYS_DIR="${SSH_KEYS_DIR:-$VPSDASH_HOME/ssh-keys}"
+    
     # Start in background
     nohup "$BINARY" > "$LOG_FILE" 2>&1 &
     echo $! > "$PID_FILE"
-    sleep 1
+    sleep 2
     
     if is_running; then
         info "✓ VPS Dashboard started successfully!"
@@ -181,7 +196,8 @@ cmd_start() {
         warn "Server runs in background. You can close this terminal."
     else
         error "❌ Failed to start. Check logs:"
-        tail -20 "$LOG_FILE"
+        echo ""
+        tail -30 "$LOG_FILE"
         rm -f "$PID_FILE"
         exit 1
     fi
@@ -268,9 +284,9 @@ cmd_config() {
 cmd_version() {
     BINARY=$(find_binary)
     if [ -n "$BINARY" ]; then
-        "$BINARY" --version 2>/dev/null || echo "vpsdash wrapper (binary: $BINARY)"
+        "$BINARY" --version 2>/dev/null || echo "vpsdash (binary: $BINARY)"
     else
-        echo "vpsdash wrapper (binary not found)"
+        echo "vpsdash wrapper (binary not found - run: vpsdash update)"
     fi
 }
 
@@ -352,7 +368,6 @@ cmd_update() {
     
     # Also update the wrapper script itself
     WRAPPER_URL="https://raw.githubusercontent.com/${GITHUB_REPO}/main/vps-dashboard/vpsdash-wrapper.sh"
-    
     echo -e "${CYAN}Installing binary to ${INSTALL_PATH}...${NC}"
     
     WAS_RUNNING=false

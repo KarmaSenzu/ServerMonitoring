@@ -88,18 +88,27 @@ func NewEngine(
 // Run starts the polling loop and blocks until ctx is cancelled. It
 // performs an immediate sweep on start so metrics are available right
 // away, then ticks on cfg.Interval.
+//
+// Offline/degraded servers get retried every 15 seconds (fast retry)
+// to reconnect as quickly as possible — no need to wait 60s.
 func (e *Engine) Run(ctx context.Context) {
 	e.Logger.Info().
 		Dur("interval", e.cfg.Interval).
 		Int("max_parallel", e.cfg.MaxParallel).
+		Int("max_failures", e.cfg.MaxFailures).
 		Dur("retention", e.cfg.Retention).
 		Msg("remote.monitoring.started")
 
 	// Immediate first sweep.
 	e.sweep(ctx)
 
+	// Normal interval ticker (every 60s by default)
 	ticker := time.NewTicker(e.cfg.Interval)
 	defer ticker.Stop()
+
+	// Fast retry ticker for offline/degraded servers (every 15s)
+	fastTicker := time.NewTicker(15 * time.Second)
+	defer fastTicker.Stop()
 
 	for {
 		select {
@@ -108,8 +117,59 @@ func (e *Engine) Run(ctx context.Context) {
 			return
 		case <-ticker.C:
 			e.sweep(ctx)
+		case <-fastTicker.C:
+			e.retryOffline(ctx)
 		}
 	}
+}
+
+// retryOffline collects metrics only from servers that are currently
+// offline or degraded — they get retried every 15 seconds to reconnect
+// as fast as possible without waiting for the full 60s interval.
+func (e *Engine) retryOffline(ctx context.Context) {
+	servers, err := e.Servers.List(ctx, models.ServerFilter{EnabledOnly: true})
+	if err != nil {
+		return
+	}
+
+	var offline []models.Server
+	for _, s := range servers {
+		if s.Status == models.ServerStatusOffline || s.Status == models.ServerStatusDegraded {
+			offline = append(offline, s)
+		}
+	}
+
+	if len(offline) == 0 {
+		return
+	}
+
+	e.Logger.Debug().Int("retry_servers", len(offline)).Msg("remote.monitoring.fast_retry")
+
+	sem := make(chan struct{}, e.cfg.MaxParallel)
+	var wg sync.WaitGroup
+
+	for _, srv := range offline {
+		select {
+		case <-ctx.Done():
+			wg.Wait()
+			return
+		default:
+		}
+
+		wg.Add(1)
+		go func(s models.Server) {
+			defer wg.Done()
+			select {
+			case sem <- struct{}{}:
+			case <-ctx.Done():
+				return
+			}
+			defer func() { <-sem }()
+			e.collectOne(ctx, s)
+		}(srv)
+	}
+
+	wg.Wait()
 }
 
 // sweep collects metrics from every enabled server in the registry

@@ -24,7 +24,16 @@ import (
 )
 
 // Version is the running build's semantic version, exposed via /health.
-const Version = "go-1.0.0"
+// Set via ldflags during build: -X 'vps-dashboard-api/internal/app.Version=v1.0.0'
+var Version = "dev"
+
+// BuildCommit is the git commit hash of this build.
+// Set via ldflags: -X 'vps-dashboard-api/internal/app.BuildCommit=abc123'
+var BuildCommit = "unknown"
+
+// BuildTime is the UTC timestamp when this binary was built.
+// Set via ldflags: -X 'vps-dashboard-api/internal/app.BuildTime=2026-01-01_12:00:00'
+var BuildTime = "unknown"
 
 // App is the shared dependency container passed into the HTTP layer.
 //

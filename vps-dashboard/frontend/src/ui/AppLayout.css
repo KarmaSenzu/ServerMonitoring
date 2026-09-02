@@ -1,3 +1,59 @@
+/* === App Layout === */
+
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  padding-top: var(--topnav-height);
+}
+
+.mobile-only {
+  display: none;
+}
+
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: var(--topnav-height);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+  transition: transform 0.25s ease;
+  overflow-y: auto;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 12px;
+}
+
+.sidebar-brand h2 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.brand-tag {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 0 0 12px;
+}
+
 .sidebar-footer {
   margin-top: auto;
   padding: 14px 12px 8px;
@@ -17,7 +73,7 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-light));
+  background: var(--accent-gradient);
   color: white;
   font-weight: 700;
   display: flex;
@@ -60,9 +116,71 @@
 }
 
 .logout-btn:hover {
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(239, 68, 68, 0.3);
   background: var(--danger-bg);
   color: var(--danger);
+}
+
+/* Main content */
+.main-content {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  padding: 24px;
+  min-width: 0;
+}
+
+/* Mobile toggle */
+.mobile-toggle {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 60;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  align-items: center;
+  justify-content: center;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .mobile-toggle {
+    display: flex;
+  }
+
+  .mobile-only {
+    display: flex;
+  }
+}
+
+@media (max-width: 640px) {
+  .top-nav-brand-text {
+    display: none;
+  }
+
+  .top-nav-user-info {
+    display: none;
+  }
+
+  .main-content {
+    padding: 16px;
+  }
 }
 
 /* Forbidden panel */

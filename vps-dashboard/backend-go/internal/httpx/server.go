@@ -143,5 +143,10 @@ func BuildEngine(a *app.App) *gin.Engine {
 	sshTunnelsH.RegisterWrites(adminOnly)
 	cloudH.RegisterWrites(adminOnly)
 
+	// Serve embedded frontend (SPA fallback). This must come last so API
+	// routes take precedence. If the frontend wasn't embedded at build time,
+	// this handler will still work but serve 404s for all frontend routes.
+	r.Use(ServeFrontend())
+
 	return r
 }

@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"flag"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -22,6 +25,7 @@ import (
 	"vps-dashboard-api/internal/commands"
 	"vps-dashboard-api/internal/config"
 	"vps-dashboard-api/internal/containers"
+	"vps-dashboard-api/internal/database"
 	"vps-dashboard-api/internal/db"
 	"vps-dashboard-api/internal/deploy"
 	"vps-dashboard-api/internal/discovery"
@@ -42,6 +46,24 @@ import (
 )
 
 func main() {
+	// Parse CLI flags
+	versionFlag := flag.Bool("version", false, "Show version information")
+	flag.BoolVar(versionFlag, "v", false, "Show version information (shorthand)")
+	flag.Parse()
+
+	// Handle --version flag
+	if *versionFlag {
+		fmt.Printf("VPS Dashboard %s\n", app.Version)
+		fmt.Printf("Build Commit: %s\n", app.BuildCommit)
+		fmt.Printf("Build Time:   %s\n", app.BuildTime)
+		if httpx.HasEmbeddedFrontend() {
+			fmt.Println("Frontend:     embedded")
+		} else {
+			fmt.Println("Frontend:     not embedded")
+		}
+		os.Exit(0)
+	}
+
 	if err := run(); err != nil {
 		log.Error().Err(err).Msg("fatal")
 		os.Exit(1)
@@ -63,12 +85,27 @@ func run() error {
 	zerolog.DefaultContextLogger = &logger
 	log.Logger = logger
 
-	// 4. Open DB.
-	conn, err := db.Open(cfg.DBPath)
-	if err != nil {
-		return err
+	// 3.5. Detect deployment mode and configure gopsutil paths.
+	//      This must happen BEFORE any sysinfo/gopsutil calls so the
+	//      correct HOST_PROC path is set for metrics collection.
+	mode := config.DetectDeploymentMode()
+	if err := config.SetGopsutilEnv(mode); err != nil {
+		logger.Warn().Err(err).Msg("failed to set gopsutil env")
 	}
-	defer func() { _ = conn.Close() }()
+	features := config.DetectFeatures(mode)
+	logger.Info().
+		Str("mode", string(mode)).
+		Bool("docker_fleet", features.DockerFleet).
+		Bool("pm2_monitor", features.PM2Monitor).
+		Str("proc_path", features.ProcPath).
+		Msg("deployment mode detected")
+
+	// 4. Open DB — via database.Manager abstraction layer.
+	//    Supports SQLite (default), PostgreSQL, and Supabase.
+	//    Config file: ./data/database.json (falls back to SQLite default).
+	//    Env vars still override for backwards compatibility:
+	//      - VPSDASH_DB_CONFIG (path to config file)
+	//      - DB_PATH (SQLite path, if config file missing)
 
 	// Bind a context that is cancelled on SIGINT/SIGTERM so background
 	// workers (e.g. the Recorder ticker) stop cleanly when the server is
@@ -76,8 +113,54 @@ func run() error {
 	rootCtx, stopSignals := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stopSignals()
 
+	dbConfigPath := database.GetDefaultConfigPath()
+	if _, err := os.Stat(dbConfigPath); err != nil {
+		// Config file doesn't exist — create default SQLite config.
+		sqlitePath := cfg.DBPath
+		defaultConfig := database.DefaultSQLiteConfig(sqlitePath)
+		if err := database.SaveConfig(dbConfigPath, defaultConfig); err != nil {
+			logger.Warn().Err(err).Msg("failed to create default database config, using direct SQLite open")
+		} else {
+			logger.Info().Str("path", dbConfigPath).Msg("created default database config (SQLite)")
+		}
+	}
+
+	dbManager, err := database.NewManagerFromFile(dbConfigPath)
+	var conn *sql.DB
+	if err != nil {
+		// Fallback: open SQLite directly (backwards compat with v1.x)
+		logger.Warn().Err(err).Msg("database config load failed, falling back to direct SQLite open")
+		conn, err = db.Open(cfg.DBPath)
+		if err != nil {
+			return err
+		}
+	} else {
+		if err := dbManager.ConnectWithRetry(rootCtx); err != nil {
+			return err
+		}
+		dbInst, _ := dbManager.DB()
+		conn = dbInst.Underlying()
+		logger.Info().
+			Str("type", string(dbManager.Type())).
+			Str("conn", dbManager.ConnectionString()).
+			Msg("database connected via abstraction layer")
+	}
+	defer func() { _ = conn.Close() }()
+
 	// 5. Run migrations.
-	if err := db.Migrate(rootCtx, conn, logger); err != nil {
+	//    Select dialect based on database type (SQLite vs PostgreSQL).
+	var dialect db.Dialect
+	if dbManager != nil {
+		switch dbManager.Type() {
+		case database.DatabaseTypePostgres, database.DatabaseTypeSupabase:
+			dialect = db.DialectPostgres
+		default:
+			dialect = db.DialectSQLite
+		}
+	} else {
+		dialect = db.DialectSQLite
+	}
+	if err := db.Migrate(rootCtx, conn, logger, dialect); err != nil {
 		return err
 	}
 
@@ -288,6 +371,9 @@ func run() error {
 		Str("env", cfg.Env).
 		Str("db", cfg.DBPath).
 		Str("version", app.Version).
+		Str("commit", app.BuildCommit).
+		Str("build_time", app.BuildTime).
+		Bool("frontend_embedded", httpx.HasEmbeddedFrontend()).
 		Dur("healthcheck_interval", cfg.HealthcheckInterval).
 		Dur("system_tick_interval", cfg.SystemTickInterval).
 		Dur("events_retention", cfg.EventsRetention).

@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -35,19 +36,19 @@ type EngineConfig struct {
 // Engine polls registered servers on a fixed cadence, collects metrics
 // via the SSH collector, persists them, and updates server status.
 type Engine struct {
-	Logger  zerolog.Logger
-	Servers *models.ServerRepo
-	Metrics *models.ServerMetricRepo
-	Events  *models.EventRepo
+	Logger     zerolog.Logger
+	Servers    *models.ServerRepo
+	Metrics    *models.ServerMetricRepo
+	Events     *models.EventRepo
+	Discoveries *models.DiscoveryRepo
 
 	Collector *Collector
 
 	cfg     EngineConfig
 
 	// Anti-flapping: track consecutive failures per server.
-	// Only mark offline after multiple consecutive failures.
 	mu        sync.Mutex
-	failCount map[string]int // server ID → consecutive failure count
+	failCount map[string]int
 }
 
 // NewEngine constructs a remote monitoring engine.
@@ -56,6 +57,7 @@ func NewEngine(
 	servers *models.ServerRepo,
 	metrics *models.ServerMetricRepo,
 	events *models.EventRepo,
+	discoveries *models.DiscoveryRepo,
 	collector *Collector,
 	cfg EngineConfig,
 ) *Engine {
@@ -75,13 +77,14 @@ func NewEngine(
 		cfg.MaxFailures = 5
 	}
 	return &Engine{
-		Logger:    logger,
-		Servers:   servers,
-		Metrics:   metrics,
-		Events:    events,
-		Collector: collector,
-		cfg:       cfg,
-		failCount: make(map[string]int),
+		Logger:      logger,
+		Servers:     servers,
+		Metrics:     metrics,
+		Events:      events,
+		Discoveries: discoveries,
+		Collector:   collector,
+		cfg:         cfg,
+		failCount:   make(map[string]int),
 	}
 }
 
@@ -250,24 +253,47 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 		}
 	}
 
-	// Auto-discover services (PM2, Docker, tunnels) on successful connection.
+	// Auto-discover services (PM2, Docker, tunnels, systemd) on successful connection.
 	// Like Purple: after SSH connects, read running services automatically.
-	// No manual input needed from the user.
+	// Results are saved to the server_discoveries table for the frontend to display.
 	if metric.Error == "" && e.Collector != nil {
 		discoverCtx, discoverCancel := context.WithTimeout(ctx, 15*time.Second)
 		discovery, err := e.Collector.Discover(discoverCtx, server)
 		discoverCancel()
 		if err != nil {
 			e.Logger.Debug().Err(err).Str("server", server.Name).Msg("remote.monitoring.discovery_failed")
-		} else {
-			e.Logger.Debug().
-				Str("server", server.Name).
-				Int("pm2", len(discovery.PM2Processes)).
-				Int("docker", len(discovery.DockerContainers)).
-				Int("tunnels", len(discovery.SSHTunnels)).
-				Int("systemd", len(discovery.SystemdServices)).
-				Int("ports", len(discovery.ListeningPorts)).
-				Msg("remote.monitoring.discovered")
+		} else if e.Discoveries != nil {
+			// Save discovery results to database
+			pm2JSON, _ := json.Marshal(discovery.PM2Processes)
+			dockerJSON, _ := json.Marshal(discovery.DockerContainers)
+			tunnelsJSON, _ := json.Marshal(discovery.SSHTunnels)
+			systemdJSON, _ := json.Marshal(discovery.SystemdServices)
+			portsJSON, _ := json.Marshal(discovery.ListeningPorts)
+
+			err := e.Discoveries.Upsert(ctx, models.ServerDiscovery{
+				ServerID:     server.ID,
+				PM2JSON:      string(pm2JSON),
+				DockerJSON:   string(dockerJSON),
+				TunnelsJSON:  string(tunnelsJSON),
+				SystemdJSON:  string(systemdJSON),
+				PortsJSON:    string(portsJSON),
+				Hostname:     discovery.Hostname,
+				Kernel:       discovery.Kernel,
+				OSName:       discovery.OSName,
+				DiscoveredAt: metric.Timestamp.Format(time.RFC3339),
+			})
+			if err != nil {
+				e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.discovery_save_failed")
+			} else {
+				e.Logger.Debug().
+					Str("server", server.Name).
+					Int("pm2", len(discovery.PM2Processes)).
+					Int("docker", len(discovery.DockerContainers)).
+					Int("tunnels", len(discovery.SSHTunnels)).
+					Int("systemd", len(discovery.SystemdServices)).
+					Int("ports", len(discovery.ListeningPorts)).
+					Msg("remote.monitoring.discovered")
+			}
 		}
 	}
 

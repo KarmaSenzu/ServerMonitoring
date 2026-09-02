@@ -6,52 +6,242 @@ A comprehensive **Infrastructure Monitoring & Management Platform** — from sin
 ![Go Version](https://img.shields.io/badge/go-1.25+-00ADD8?logo=go)
 ![React](https://img.shields.io/badge/react-19+-61DAFB?logo=react)
 ![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker)
+![Platforms](https://img.shields.io/badge/platforms-linux%20%7C%20macOS%20%7C%20windows%20%7C%20arm64-lightgrey)
 
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
-- [Architecture (12 Phases)](#-architecture-12-phases)
-- [Tech Stack](#-tech-stack)
-- [Prerequisites](#-prerequisites)
-- [Quick Start (Docker)](#-quick-start-docker)
+- [Quick Start](#-quick-start)
+- [Installation (Single Binary)](#-installation-single-binary)
 - [Local Development](#-local-development)
 - [Configuration](#-configuration)
-- [Environment Variables](#-environment-variables)
-- [Project Structure](#-project-structure)
+- [Database Configuration](#-database-configuration)
+- [Architecture (12 Phases)](#-architecture-12-phases)
+- [Tech Stack](#-tech-stack)
 - [Features by Phase](#-features-by-phase)
 - [API Reference](#-api-reference)
 - [RBAC Roles](#-rbac-roles)
 - [MCP/AI Integration](#-mcpai-integration)
 - [Security](#-security)
-- [Database Cluster (Optional)](#-database-cluster-optional)
-- [Deployment](#-deployment)
-- [Files to Exclude from GitHub](#-files-to-exclude-from-github)
-- [Troubleshooting](#-troubleshooting)
+- [Deployment Modes](#-deployment-modes)
 - [License](#-license)
 
 ---
 
 ## 🌟 Overview
 
-This project evolved from a **VPS Monitoring Dashboard** (local server monitoring) into a full **Infrastructure Platform** across 12 development phases:
-
-```
-Phase 0:  Stabilisasi baseline monitoring
-Phase 1:  Server Registry (CRUD, tags, UI)
-Phase 2:  SSH Engine (keys, test, command, TOFU host keys)
-Phase 3:  Remote Monitoring (agentless metrics via SSH)
-Phase 4:  Docker/Podman Fleet (multi-server containers)
-Phase 5:  Terminal (WebSocket + xterm.js + SSH PTY)
-Phase 6:  Multi-Host Commands (snippets, blast radius, parallel exec)
-Phase 7:  File Manager (SFTP browse/upload/download/rename/delete)
-Phase 8:  SSH Tunnels (local/remote/SOCKS5 forwarding)
-Phase 9:  Cloud Discovery (provider abstraction, import to registry)
-Phase 10: Infrastructure Search (Ctrl+K global search)
-Phase 11: RBAC 3-level (ADMIN/OPERATOR/VIEWER)
-Phase 12: MCP/AI (read-only Model Context Protocol for AI agents)
-```
+This project evolved from a **VPS Monitoring Dashboard** (local server monitoring) into a full **Infrastructure Platform** across 12 development phases. It now supports **single binary deployment** with **multi-database backends** (SQLite, PostgreSQL, Supabase).
 
 The core philosophy: `MONITOR → UNDERSTAND → INVESTIGATE → ACT → VERIFY`
+
+---
+
+## 🚀 Quick Start
+
+### Option A: Single Binary (Recommended)
+
+```bash
+# Clone and build
+git clone https://github.com/KarmaSenzu/ServerMonitoring.git
+cd ServerMonitoring/vps-dashboard
+./scripts/build.sh
+
+# Set required env var
+export JWT_SECRET=$(openssl rand -base64 32)
+
+# Run!
+./vpsdash
+
+# Access: http://localhost:3001
+# Default: admin / (set BOOTSTRAP_ADMIN_PASSWORD env var)
+```
+
+### Option B: Docker Compose
+
+```bash
+git clone https://github.com/KarmaSenzu/ServerMonitoring.git
+cd ServerMonitoring/vps-dashboard
+cp .env.example .env
+# Edit .env — set JWT_SECRET and BOOTSTRAP_ADMIN_PASSWORD
+docker compose up -d --build
+
+# Access: http://localhost (port 80 via nginx)
+```
+
+### Option C: Install Script (Linux/macOS)
+
+```bash
+curl -sSL https://raw.githubusercontent.com/KarmaSenzu/ServerMonitoring/feature/single-binary-deployment/vps-dashboard/install.sh | bash
+vpsdash
+```
+
+---
+
+## 📦 Installation (Single Binary)
+
+### Build from Source
+
+```bash
+# Prerequisites: Go 1.25+, Node.js 20+
+
+cd vps-dashboard
+./scripts/build.sh
+# Output: ./vpsdash (22MB binary with embedded frontend)
+```
+
+### Cross-Platform Build
+
+```bash
+./scripts/build-all.sh
+# Output: dist/ directory with binaries for:
+#   - linux/amd64, linux/arm64
+#   - darwin/amd64 (Intel), darwin/arm64 (Apple Silicon)
+#   - windows/amd64, windows/arm64
+```
+
+### Verify Installation
+
+```bash
+./vpsdash --version
+# Output:
+# VPS Dashboard v1.0.0
+# Build Commit: abc123
+# Build Time:   2026-09-02T10:00:00Z
+# Frontend:     embedded
+```
+
+### Run as Systemd Service (Linux)
+
+```bash
+# Using install script (auto-configures systemd):
+curl -sSL https://raw.githubusercontent.com/KarmaSenzu/ServerMonitoring/feature/single-binary-deployment/vps-dashboard/install.sh | bash
+
+# Or manual setup:
+sudo cp vpsdash /usr/local/bin/
+sudo useradd --system --no-create-home --shell /bin/false vpsdash
+sudo mkdir -p /var/lib/vpsdash
+sudo chown vpsdash:vpsdash /var/lib/vpsdash
+
+# Create systemd service:
+sudo tee /etc/systemd/system/vpsdash.service > /dev/null <<EOF
+[Unit]
+Description=VPS Dashboard
+After=network.target
+
+[Service]
+Type=simple
+User=vpsdash
+Group=vpsdash
+ExecStart=/usr/local/bin/vpsdash
+WorkingDirectory=/var/lib/vpsdash
+Restart=on-failure
+Environment="ENV=production"
+Environment="HTTP_ADDR=:3001"
+Environment="DB_PATH=/var/lib/vpsdash/vpsdash.db"
+Environment="JWT_SECRET=YOUR_SECRET_HERE"
+Environment="BOOTSTRAP_ADMIN_USERNAME=admin"
+Environment="BOOTSTRAP_ADMIN_PASSWORD=CHANGE_ME"
+Environment="LOG_LEVEL=info"
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now vpsdash
+```
+
+---
+
+## 💻 Local Development
+
+### Backend (Go)
+
+```bash
+cd vps-dashboard/backend-go
+cp ../.env.example .env
+export JWT_SECRET="dev-secret-change-me"
+go mod tidy
+go run ./cmd/api/
+# Backend: http://localhost:3001
+```
+
+### Frontend (React)
+
+```bash
+cd vps-dashboard/frontend
+npm install
+npm run dev
+# Frontend: http://localhost:5173 (proxies API to :3001)
+```
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `JWT_SECRET` | ✅ Yes | — | JWT signing key (min 32 chars) |
+| `BOOTSTRAP_ADMIN_USERNAME` | No | `admin` | First-boot admin username |
+| `BOOTSTRAP_ADMIN_PASSWORD` | No | — | First-boot admin password |
+| `HTTP_ADDR` | No | `:3001` | HTTP listen address |
+| `DB_PATH` | No | `./data/vpsdash.db` | SQLite database path |
+| `ENV` | No | `development` | `development` or `production` |
+| `LOG_LEVEL` | No | `info` | `debug`/`info`/`warn`/`error` |
+| `CORS_ORIGINS` | No | `http://localhost:5173` | Comma-separated allowed origins |
+| `REMOTE_POLL_INTERVAL` | No | `60s` | Remote metrics collection interval |
+| `REMOTE_MAX_PARALLEL` | No | `4` | Max concurrent SSH connections |
+| `SSH_KEYS_DIR` | No | `./data/ssh-keys` | SSH private key storage |
+| `MCP_API_KEY` | No | — | Enable MCP/AI server if set |
+
+Full template: see [`.env.example`](vps-dashboard/.env.example)
+
+---
+
+## 🗄️ Database Configuration
+
+The system supports multiple database backends. Default is SQLite (zero-config).
+
+### SQLite (Default)
+
+No configuration needed. Database file created at `./data/vpsdash.db`.
+
+### PostgreSQL / Supabase
+
+Create `./data/database.json`:
+
+```json
+{
+  "type": "supabase",
+  "supabase": {
+    "project_ref": "YOUR_PROJECT_REF",
+    "project_url": "https://YOUR_PROJECT_REF.supabase.co",
+    "database": {
+      "host": "db.YOUR_PROJECT_REF.supabase.co",
+      "port": 5432,
+      "database": "postgres",
+      "username": "postgres",
+      "password": "$SUPABASE_DB_PASSWORD"
+    }
+  }
+}
+```
+
+Set password via environment variable:
+```bash
+export SUPABASE_DB_PASSWORD="your-password"
+./vpsdash
+```
+
+The system auto-detects the config file and runs appropriate migrations.
+Password references (`$ENV_VAR`) are resolved at runtime, never stored in the JSON.
+
+### Data Migration (SQLite → PostgreSQL)
+
+The system includes a migrator that can transfer data between database backends.
+Migration includes automatic rollback on failure (source database is never modified).
 
 ---
 

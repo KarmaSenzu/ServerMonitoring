@@ -12,8 +12,12 @@ import {
   FiActivity,
   FiBell,
   FiUploadCloud,
+  FiCheckCircle,
+  FiAlertTriangle,
+  FiGrid,
+  FiBox,
 } from 'react-icons/fi'
-import { system, docker, tunnels, projects, events, backups } from '../api/endpoints.js'
+import { system, docker, tunnels, projects, events, backups, servers as serversApi } from '../api/endpoints.js'
 import DockerCard from '../components/DockerCard.jsx'
 import TunnelCard from '../components/TunnelCard.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
@@ -25,6 +29,7 @@ import SeverityBadge from '../ui/SeverityBadge.jsx'
 import DeploymentStatusBadge from '../ui/DeploymentStatusBadge.jsx'
 import RelativeTime from '../ui/RelativeTime.jsx'
 import Sparkline from '../components/Sparkline.jsx'
+import { KPICard, NetworkTopology, ServerStatusList, IncidentTimeline } from '../ui/CommandCenter.jsx'
 import './Dashboard.css'
 
 function formatBytes(bytes) {
@@ -106,6 +111,21 @@ function computeNetRates(networkSamples) {
 export default function Dashboard() {
   const queryClient = useQueryClient()
   const toast = useToast()
+
+  // Infrastructure Platform queries (Phase 1-12)
+  const serversQ = useQuery({
+    queryKey: ['servers'],
+    queryFn: () => serversApi.list(),
+    refetchInterval: 30000,
+  })
+
+  const eventsQ = useQuery({
+    queryKey: ['dashboard-events'],
+    queryFn: () => events.list({ limit: 15 }),
+    refetchInterval: 30000,
+  })
+
+  // Local server monitoring queries (existing)
 
   const statsQ = useQuery({
     queryKey: ['system', 'stats'],
@@ -344,6 +364,84 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* === Infrastructure Command Center Overview === */}
+      {(() => {
+        const allServers = Array.isArray(serversQ.data) ? serversQ.data : []
+        const onlineCount = allServers.filter((s) => s.status === 'online').length
+        const offlineCount = allServers.filter((s) => s.status === 'offline').length
+        const degradedCount = allServers.filter((s) => s.status === 'degraded').length
+        const recentEvents = Array.isArray(eventsQ.data?.data) ? eventsQ.data.data : []
+        const criticalCount = recentEvents.filter((e) => e.severity === 'critical' || e.severity === 'error').length
+        const uptime = allServers.length > 0
+          ? ((onlineCount / allServers.length) * 100).toFixed(1)
+          : '100'
+
+        return (
+          <>
+            <div className="kpi-grid">
+              <KPICard
+                icon={<FiServer />}
+                label="Servers"
+                value={allServers.length}
+                sub={<span className="kpi-trend-up">All registered</span>}
+                accent="var(--accent)"
+              />
+              <KPICard
+                icon={<FiCheckCircle />}
+                label="Online"
+                value={onlineCount}
+                sub={offlineCount > 0 ? <span className="kpi-trend-down">{offlineCount} offline</span> : <span className="kpi-trend-up">All operational</span>}
+                accent="var(--success)"
+              />
+              <KPICard
+                icon={<FiAlertTriangle />}
+                label="Alerts"
+                value={criticalCount}
+                sub={criticalCount > 0 ? <span className="kpi-trend-down">Needs attention</span> : <span className="kpi-trend-up">No alerts</span>}
+                accent="var(--warning)"
+              />
+              <KPICard
+                icon={<FiActivity />}
+                label="Uptime"
+                value={uptime}
+                suffix="%"
+                sub={degradedCount > 0 ? <span className="kpi-trend-down">{degradedCount} degraded</span> : <span className="kpi-trend-up">Healthy</span>}
+                accent="var(--maintenance)"
+              />
+            </div>
+
+            <div className="dashboard-grid-2col">
+              <div className="glass" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Network Topology</h3>
+                  <Link to="/servers" style={{ fontSize: 11, color: 'var(--accent-light)' }}>View all →</Link>
+                </div>
+                <NetworkTopology servers={allServers} />
+              </div>
+
+              <div className="glass" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Server Status</h3>
+                  <Link to="/servers" style={{ fontSize: 11, color: 'var(--accent-light)' }}>Manage →</Link>
+                </div>
+                <ServerStatusList servers={allServers} />
+              </div>
+            </div>
+
+            <div className="glass" style={{ padding: 18, marginTop: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>Incident Timeline</h3>
+                <Link to="/events" style={{ fontSize: 11, color: 'var(--accent-light)' }}>All events →</Link>
+              </div>
+              <IncidentTimeline events={recentEvents} />
+            </div>
+
+            <div style={{ height: 24 }} />
+          </>
+        )
+      })()}
+
+      {/* === Local Server Monitoring (existing) === */}
       {stats && (
         <div className="stats-grid">
           <div className="stat-card glass animate-in" style={{ animationDelay: '0.05s' }}>

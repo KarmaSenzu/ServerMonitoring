@@ -18,6 +18,7 @@ import {
   FiKey,
   FiShuffle,
   FiCloud,
+  FiGrid,
 } from 'react-icons/fi'
 import { useAuth } from '../auth/useAuth.js'
 import './AppLayout.css'
@@ -34,38 +35,69 @@ export default function AppLayout() {
 
   return (
     <div className="app-layout">
-      <button
-        className="mobile-toggle"
-        onClick={() => setSidebarOpen((v) => !v)}
-        aria-label="Toggle sidebar"
-      >
-        {sidebarOpen ? <FiX /> : <FiMenu />}
-      </button>
+      {/* Top Navigation Bar */}
+      <header className="top-nav">
+        <button
+          className="top-nav-icon-btn mobile-only"
+          onClick={() => setSidebarOpen((v) => !v)}
+          aria-label="Toggle sidebar"
+        >
+          {sidebarOpen ? <FiX /> : <FiMenu />}
+        </button>
 
+        <div className="top-nav-brand">
+          <div className="top-nav-brand-icon">◉</div>
+          <span className="top-nav-brand-text">Infrastructure Command Center</span>
+        </div>
+
+        <div className="top-nav-spacer" />
+
+        <div className="top-nav-actions">
+          <GlobalSearch />
+          <button className="top-nav-icon-btn" title="Notifications">
+            <FiBell />
+            <span className="top-nav-badge">3</span>
+          </button>
+          <div className="top-nav-user">
+            <div className="top-nav-user-avatar">
+              {(user?.username || '?').slice(0, 1).toUpperCase()}
+            </div>
+            <div className="top-nav-user-info">
+              <span className="top-nav-user-name">{user?.username || 'unknown'}</span>
+              {user?.role && (
+                <span className={`role-badge role-${user.role}`}>{user.role}</span>
+              )}
+            </div>
+          </div>
+          <button className="top-nav-icon-btn" onClick={logout} title="Logout">
+            <FiLogOut />
+          </button>
+        </div>
+      </header>
+
+      {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <div className="brand-icon">V</div>
           <div>
-            <h2>VPS Dashboard</h2>
-            <span className="brand-tag">Monitoring &amp; Control</span>
+            <h2>Command Center</h2>
+            <span className="brand-tag">Infrastructure Platform</span>
           </div>
         </div>
 
-        <GlobalSearch />
-
         <nav className="sidebar-nav">
-          <span className="nav-section-label">Monitoring</span>
+          <span className="nav-section-label">Overview</span>
           <NavLink
             to="/"
             end
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             onClick={closeSidebar}
           >
-            <span className="nav-icon"><FiCpu /></span>
+            <span className="nav-icon"><FiGrid /></span>
             Dashboard
           </NavLink>
 
-          <span className="nav-section-label">Infrastructure</span>
+          <span className="nav-section-label">Monitoring</span>
           <NavLink
             to="/servers"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -75,20 +107,22 @@ export default function AppLayout() {
             Servers
           </NavLink>
           <NavLink
-            to="/ssh-keys"
-            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            onClick={closeSidebar}
-          >
-            <span className="nav-icon"><FiKey /></span>
-            SSH Keys
-          </NavLink>
-          <NavLink
             to="/containers"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             onClick={closeSidebar}
           >
             <span className="nav-icon"><FiBox /></span>
             Containers
+          </NavLink>
+
+          <span className="nav-section-label">Operations</span>
+          <NavLink
+            to="/ssh-keys"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiKey /></span>
+            SSH Keys
           </NavLink>
           <NavLink
             to="/commands"
@@ -106,6 +140,8 @@ export default function AppLayout() {
             <span className="nav-icon"><FiShuffle /></span>
             SSH Tunnels
           </NavLink>
+
+          <span className="nav-section-label">Infrastructure</span>
           <NavLink
             to="/cloud"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -114,8 +150,6 @@ export default function AppLayout() {
             <span className="nav-icon"><FiCloud /></span>
             Cloud Discovery
           </NavLink>
-
-          <span className="nav-section-label">Registry</span>
           <NavLink
             to="/projects"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -132,8 +166,6 @@ export default function AppLayout() {
             <span className="nav-icon"><FiSearch /></span>
             Discovery
           </NavLink>
-
-          <span className="nav-section-label">Processes</span>
           <NavLink
             to="/pm2"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -161,7 +193,7 @@ export default function AppLayout() {
             Notifications
           </NavLink>
 
-          <span className="nav-section-label">Operations</span>
+          <span className="nav-section-label">System</span>
           <NavLink
             to="/backups"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -178,8 +210,6 @@ export default function AppLayout() {
             <span className="nav-icon"><FiSettings /></span>
             Environments
           </NavLink>
-
-          <span className="nav-section-label">Tools</span>
           <NavLink
             to="/generator"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -221,6 +251,7 @@ export default function AppLayout() {
         </div>
       </aside>
 
+      {/* Main Content */}
       <main className="main-content">
         <Outlet />
       </main>

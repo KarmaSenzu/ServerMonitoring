@@ -23,6 +23,10 @@ import (
 // essential system metrics in one SSH round-trip. It uses only
 // coreutils/procps utilities available on any Linux/macOS system.
 // Output is key=value, one per line; lines without '=' are ignored.
+//
+// In addition to metrics, it also collects system info (OS, arch,
+// hostname) that is used to auto-populate the server registry —
+// so users don't have to fill these manually.
 const metricsCommand = `set -e 2>/dev/null; ` +
 	// CPU usage: parse top's idle percentage and invert.
 	`idle=$(top -bn1 2>/dev/null | awk '/Cpu\(s\)/{print $8}' | head -1); ` +
@@ -49,7 +53,12 @@ const metricsCommand = `set -e 2>/dev/null; ` +
 	`  fi; ` +
 	`done; ` +
 	// Uptime.
-	`echo "uptime=$(cut -d' ' -f1 /proc/uptime 2>/dev/null || sysctl -n kern.boottime 2>/dev/null | awk -F'[ ,]' '{print $4}' | xargs expr $(date +%s) - 2>/dev/null)"; `
+	`echo "uptime=$(cut -d' ' -f1 /proc/uptime 2>/dev/null || sysctl -n kern.boottime 2>/dev/null | awk -F'[ ,]' '{print $4}' | xargs expr $(date +%s) - 2>/dev/null)"; ` +
+	// System info (auto-detected, used to populate server registry).
+	`echo "os_name=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | head -1 | cut -d'"' -f2 || uname -sr 2>/dev/null || echo '')"; ` +
+	`echo "architecture=$(uname -m 2>/dev/null || echo '')"; ` +
+	`echo "resolved_hostname=$(hostname 2>/dev/null || cat /etc/hostname 2>/dev/null || echo '')"; ` +
+	`echo "kernel=$(uname -r 2>/dev/null || echo '')"`
 
 // Collector gathers metrics from a single remote server.
 type Collector struct {
@@ -64,6 +73,9 @@ func NewCollector(engine *ssh.Service) *Collector {
 // Collect runs the metrics command on the given server and parses the
 // output. A failed SSH session still produces a ServerMetric with an
 // Error field so the monitoring loop can record the failure.
+//
+// It also captures system info (OS, architecture, hostname) that the
+// engine can use to auto-populate the server registry.
 func (c *Collector) Collect(ctx context.Context, server models.Server) models.ServerMetric {
 	now := time.Now().UTC()
 	if c.Engine == nil {
@@ -91,10 +103,46 @@ func (c *Collector) Collect(ctx context.Context, server models.Server) models.Se
 	m := parseMetrics(result.Stdout)
 	m.ServerID = server.ID
 	m.Timestamp = now
+	m.RawStdout = result.Stdout
 	if parseErr != "" {
 		m.Error = parseErr
 	}
 	return m
+}
+
+// SystemInfo holds auto-detected server metadata collected via SSH.
+// This is populated from the same SSH command as metrics, so no
+// extra round-trip is needed.
+type SystemInfo struct {
+	OperatingSystem string
+	Architecture    string
+	Hostname        string
+	Kernel          string
+}
+
+// ParseSystemInfo extracts system info from the metrics command output.
+// Called by the engine to auto-populate the server registry.
+func ParseSystemInfo(stdout string) SystemInfo {
+	kv := make(map[string]string, 4)
+	for _, line := range strings.Split(stdout, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		idx := strings.IndexByte(line, '=')
+		if idx < 0 {
+			continue
+		}
+		k := strings.TrimSpace(line[:idx])
+		v := strings.TrimSpace(line[idx+1:])
+		kv[k] = v
+	}
+	return SystemInfo{
+		OperatingSystem: kv["os_name"],
+		Architecture:    kv["architecture"],
+		Hostname:        kv["resolved_hostname"],
+		Kernel:          kv["kernel"],
+	}
 }
 
 // parseMetrics turns key=value lines into a ServerMetric.

@@ -707,20 +707,35 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
             </p>
           </div>
 
-          {/* === OPTIONAL: System Info === */}
+          {/* === OPTIONAL: System Info — auto-detected via SSH === */}
           <div className="form-group">
-            <label>Operating system (optional)</label>
-            <input type="text" placeholder="Ubuntu 24.04" value={form.operating_system} onChange={set('operating_system')} />
+            <label>Operating system <span className="field-auto">auto-detected</span></label>
+            <input
+              type="text"
+              placeholder="Terisi otomatis saat SSH berhasil"
+              value={form.operating_system}
+              onChange={set('operating_system')}
+              disabled
+              className="auto-field"
+            />
             <p className="field-help">
-              OS server, hanya untuk dokumentasi dan filter di UI. Bisa dikosongkan.
+              Terisi otomatis dari server saat koneksi SSH pertama berhasil.
+              Tidak perlu diisi manual.
             </p>
           </div>
 
           <div className="form-group">
-            <label>Architecture (optional)</label>
-            <input type="text" placeholder="amd64 / arm64" value={form.architecture} onChange={set('architecture')} />
+            <label>Architecture <span className="field-auto">auto-detected</span></label>
+            <input
+              type="text"
+              placeholder="Terisi otomatis saat SSH berhasil"
+              value={form.architecture}
+              onChange={set('architecture')}
+              disabled
+              className="auto-field"
+            />
             <p className="field-help">
-              Arsitektur CPU. Hanya untuk dokumentasi. Bisa dikosongkan.
+              Terisi otomatis dari server (misal <code>amd64</code> atau <code>arm64</code>).
             </p>
           </div>
 

@@ -458,6 +458,40 @@ func (r *ServerRepo) SetStatus(ctx context.Context, id, status, detail string, l
 	return nil
 }
 
+// UpdateSystemInfo updates only the auto-detected metadata fields
+// (operating_system, architecture) of a server. This is called after
+// the first successful SSH connection to auto-populate these fields
+// so users don't have to fill them manually.
+//
+// Only non-empty values are written, so this won't overwrite existing
+// values with empty strings if detection fails for some reason.
+func (r *ServerRepo) UpdateSystemInfo(ctx context.Context, id, osName, arch string) error {
+	if osName == "" && arch == "" {
+		return nil // Nothing to update
+	}
+
+	// Build dynamic SET clause based on which fields are non-empty.
+	setClause := "updated_at = datetime('now')"
+	args := []interface{}{}
+	if osName != "" {
+		setClause = "operating_system = ?, " + setClause
+		args = append(args, osName)
+	}
+	if arch != "" {
+		setClause = "architecture = ?, " + setClause
+		args = append(args, arch)
+	}
+	args = append(args, id)
+
+	_, err := r.DB.ExecContext(ctx,
+		`UPDATE servers SET `+setClause+` WHERE id = ?`,
+		args...)
+	if err != nil {
+		return fmt.Errorf("server: update system info: %w", err)
+	}
+	return nil
+}
+
 // attachServerTags replaces the tag membership of a server within the
 // given transaction. Unknown tag names are inserted into the tags
 // catalogue (INSERT OR IGNORE) before being linked.

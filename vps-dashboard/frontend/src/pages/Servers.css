@@ -72,6 +72,27 @@
   color: var(--text-secondary);
 }
 
+/* Auto-detected fields (disabled, shows "will be filled automatically") */
+.field-auto {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--success);
+  background: rgba(76, 175, 80, 0.12);
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.auto-field {
+  opacity: 0.6;
+  cursor: not-allowed;
+  font-style: italic;
+}
+
 .servers-summary {
   display: flex;
   gap: 12px;

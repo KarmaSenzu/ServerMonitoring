@@ -144,7 +144,10 @@ func (e *Engine) sweep(ctx context.Context) {
 }
 
 // collectOne gathers metrics for a single server, persists them, and
-// updates the server's status row.
+// updates the server's status row. On successful SSH connection, it
+// also auto-populates system metadata (OS, architecture) that was
+// detected from the remote host — so users don't have to fill these
+// manually when registering a server.
 func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 	collectCtx, cancel := context.WithTimeout(ctx, e.cfg.CommandTimeout)
 	defer cancel()
@@ -155,6 +158,24 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 	// what happened so the history endpoint can surface it).
 	if _, err := e.Metrics.Append(ctx, metric); err != nil {
 		e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.persist_failed")
+	}
+
+	// Auto-populate system metadata on successful SSH connection.
+	// Only update if the server doesn't already have these fields
+	// set (avoids redundant DB writes on every sweep).
+	if metric.Error == "" && (server.OperatingSystem == "" || server.Architecture == "") {
+		sysInfo := ParseSystemInfo(metric.RawStdout)
+		if sysInfo.OperatingSystem != "" || sysInfo.Architecture != "" {
+			if err := e.Servers.UpdateSystemInfo(ctx, server.ID, sysInfo.OperatingSystem, sysInfo.Architecture); err != nil {
+				e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.sysinfo_update_failed")
+			} else {
+				e.Logger.Debug().
+					Str("server", server.Name).
+					Str("os", sysInfo.OperatingSystem).
+					Str("arch", sysInfo.Architecture).
+					Msg("remote.monitoring.sysinfo_updated")
+			}
+		}
 	}
 
 	// Update server status based on the collection result.

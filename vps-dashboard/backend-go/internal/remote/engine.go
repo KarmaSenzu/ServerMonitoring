@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -28,8 +29,7 @@ type EngineConfig struct {
 }
 
 // Engine polls registered servers on a fixed cadence, collects metrics
-// via the SSH collector, persists them, and updates server status. It
-// is the "Remote Monitoring" half of Phase 3.
+// via the SSH collector, persists them, and updates server status.
 type Engine struct {
 	Logger  zerolog.Logger
 	Servers *models.ServerRepo
@@ -39,6 +39,11 @@ type Engine struct {
 	Collector *Collector
 
 	cfg     EngineConfig
+
+	// Anti-flapping: track consecutive failures per server.
+	// Only mark offline after multiple consecutive failures.
+	mu        sync.Mutex
+	failCount map[string]int // server ID → consecutive failure count
 }
 
 // NewEngine constructs a remote monitoring engine.
@@ -69,6 +74,7 @@ func NewEngine(
 		Events:    events,
 		Collector: collector,
 		cfg:       cfg,
+		failCount: make(map[string]int),
 	}
 }
 
@@ -148,6 +154,13 @@ func (e *Engine) sweep(ctx context.Context) {
 // also auto-populates system metadata (OS, architecture) that was
 // detected from the remote host — so users don't have to fill these
 // manually when registering a server.
+//
+// STATUS LOGIC (anti-flapping):
+// - A single failed poll does NOT immediately mark a server offline.
+// - We track consecutive failures per server and only mark offline
+//   after maxFailures (default 3) consecutive failures.
+// - A single successful poll immediately marks online.
+// - This prevents transient network blips from causing flapping.
 func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 	collectCtx, cancel := context.WithTimeout(ctx, e.cfg.CommandTimeout)
 	defer cancel()
@@ -161,42 +174,67 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 	}
 
 	// Auto-populate system metadata on successful SSH connection.
-	// Only update if the server doesn't already have these fields
-	// set (avoids redundant DB writes on every sweep).
 	if metric.Error == "" && (server.OperatingSystem == "" || server.Architecture == "") {
 		sysInfo := ParseSystemInfo(metric.RawStdout)
 		if sysInfo.OperatingSystem != "" || sysInfo.Architecture != "" {
 			if err := e.Servers.UpdateSystemInfo(ctx, server.ID, sysInfo.OperatingSystem, sysInfo.Architecture); err != nil {
 				e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.sysinfo_update_failed")
-			} else {
-				e.Logger.Debug().
-					Str("server", server.Name).
-					Str("os", sysInfo.OperatingSystem).
-					Str("arch", sysInfo.Architecture).
-					Msg("remote.monitoring.sysinfo_updated")
 			}
 		}
 	}
 
-	// Update server status based on the collection result.
-	status := models.ServerStatusOnline
+	// Determine new status using anti-flapping logic.
+	// Key insight: don't mark offline on first failure. Only after
+	// consecutive failures do we consider the server truly offline.
+	maxFailures := 3
+	newStatus := models.ServerStatusOnline
 	detail := ""
+
 	if metric.Error != "" {
-		status = models.ServerStatusOffline
-		detail = metric.Error
-		if len(detail) > 256 {
-			detail = detail[:256]
+		// This poll failed. Increment consecutive failure count.
+		e.mu.Lock()
+		e.failCount[server.ID]++
+		failures := e.failCount[server.ID]
+		e.mu.Unlock()
+
+		if failures >= maxFailures {
+			// Only mark offline after multiple consecutive failures
+			newStatus = models.ServerStatusOffline
+			detail = metric.Error
+			if len(detail) > 256 {
+				detail = detail[:256]
+			}
+		} else {
+			// Keep current status (don't flap). If was online, stay online
+			// but note the transient failure in detail.
+			newStatus = server.Status
+			if server.Status == models.ServerStatusOnline {
+				newStatus = models.ServerStatusDegraded
+			}
+			detail = fmt.Sprintf("transient failure (%d/%d): %s", failures, maxFailures, metric.Error)
+			if len(detail) > 256 {
+				detail = detail[:256]
+			}
 		}
+	} else {
+		// Success! Reset failure count.
+		e.mu.Lock()
+		e.failCount[server.ID] = 0
+		e.mu.Unlock()
 	}
-	if err := e.Servers.SetStatus(ctx, server.ID, status, detail, metric.Timestamp); err != nil {
+
+	// Update server status.
+	if err := e.Servers.SetStatus(ctx, server.ID, newStatus, detail, metric.Timestamp); err != nil {
 		e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.status_update_failed")
 	}
 
-	// Emit a degraded event when a previously-healthy server goes
-	// offline. We compare against the server's previous status.
-	if metric.Error != "" && server.Status == models.ServerStatusOnline {
+	// Emit events on status transitions.
+	if newStatus == models.ServerStatusOffline && server.Status != models.ServerStatusOffline {
 		e.emitEvent(ctx, server, models.SeverityWarning, "server_offline",
-			"Server "+server.Name+" is unreachable: "+detail)
+			"Server "+server.Name+" is unreachable after "+fmt.Sprintf("%d", maxFailures)+" consecutive failures: "+detail)
+	} else if newStatus == models.ServerStatusOnline && server.Status != models.ServerStatusOnline {
+		e.emitEvent(ctx, server, models.SeverityInfo, "server_recovered",
+			"Server "+server.Name+" is back online")
 	}
 }
 

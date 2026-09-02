@@ -833,6 +833,8 @@ a {
   flex-direction: column;
   gap: 0;
   position: relative;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .incident-timeline::before {
@@ -904,6 +906,22 @@ a {
   font-size: 10px;
   color: var(--text-muted);
   font-family: 'JetBrains Mono', monospace;
+}
+
+.incident-view-all {
+  display: block;
+  text-align: center;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: none;
+  border-top: 1px solid var(--glass-border);
+  margin-top: 4px;
+  transition: background 0.2s;
+}
+
+.incident-view-all:hover {
+  background: var(--glass-bg);
 }
 
 /* Page header */

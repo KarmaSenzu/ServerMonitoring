@@ -193,6 +193,7 @@ export function ServerStatusList({ servers }) {
 }
 
 // IncidentTimeline shows recent events as a vertical timeline.
+// Limited to 5 visible items with scroll for the rest to save space.
 export function IncidentTimeline({ events }) {
   if (!events || events.length === 0) {
     return <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No recent events.</p>
@@ -207,7 +208,7 @@ export function IncidentTimeline({ events }) {
 
   return (
     <div className="incident-timeline">
-      {events.slice(0, 15).map((ev, i) => (
+      {events.slice(0, 5).map((ev, i) => (
         <div key={ev.id || i} className="incident-item">
           <span className={`incident-dot ${severityClass[ev.severity] || 'severity-info'}`}>
             ●
@@ -220,6 +221,11 @@ export function IncidentTimeline({ events }) {
           </div>
         </div>
       ))}
+      {events.length > 5 && (
+        <a href="/events" className="incident-view-all">
+          View all {events.length} events →
+        </a>
+      )}
     </div>
   )
 }

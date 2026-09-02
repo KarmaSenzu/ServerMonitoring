@@ -21,11 +21,15 @@ type EngineConfig struct {
 	MaxParallel int
 
 	// CommandTimeout bounds each SSH metrics command (applied via the
-	// SSH engine's context).
+	// SSH engine's context). Default 30s — must be long enough for slow servers.
 	CommandTimeout time.Duration
 
 	// Retention controls how old metrics are purged.
 	Retention time.Duration
+
+	// MaxFailures is the number of consecutive failed polls before
+	// a server is marked offline (anti-flapping). Default 5.
+	MaxFailures int
 }
 
 // Engine polls registered servers on a fixed cadence, collects metrics
@@ -62,10 +66,13 @@ func NewEngine(
 		cfg.MaxParallel = 4
 	}
 	if cfg.CommandTimeout <= 0 {
-		cfg.CommandTimeout = 15 * time.Second
+		cfg.CommandTimeout = 30 * time.Second
 	}
 	if cfg.Retention <= 0 {
 		cfg.Retention = 24 * time.Hour
+	}
+	if cfg.MaxFailures <= 0 {
+		cfg.MaxFailures = 5
 	}
 	return &Engine{
 		Logger:    logger,
@@ -183,10 +190,34 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 		}
 	}
 
+	// Auto-discover services (PM2, Docker, tunnels) on successful connection.
+	// Like Purple: after SSH connects, read running services automatically.
+	// No manual input needed from the user.
+	if metric.Error == "" && e.Collector != nil {
+		discoverCtx, discoverCancel := context.WithTimeout(ctx, 15*time.Second)
+		discovery, err := e.Collector.Discover(discoverCtx, server)
+		discoverCancel()
+		if err != nil {
+			e.Logger.Debug().Err(err).Str("server", server.Name).Msg("remote.monitoring.discovery_failed")
+		} else {
+			e.Logger.Debug().
+				Str("server", server.Name).
+				Int("pm2", len(discovery.PM2Processes)).
+				Int("docker", len(discovery.DockerContainers)).
+				Int("tunnels", len(discovery.SSHTunnels)).
+				Int("systemd", len(discovery.SystemdServices)).
+				Int("ports", len(discovery.ListeningPorts)).
+				Msg("remote.monitoring.discovered")
+		}
+	}
+
 	// Determine new status using anti-flapping logic.
 	// Key insight: don't mark offline on first failure. Only after
-	// consecutive failures do we consider the server truly offline.
-	maxFailures := 3
+	// MaxFailures consecutive failures do we consider the server truly offline.
+	maxFailures := e.cfg.MaxFailures
+	if maxFailures <= 0 {
+		maxFailures = 5
+	}
 	newStatus := models.ServerStatusOnline
 	detail := ""
 
@@ -205,8 +236,7 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 				detail = detail[:256]
 			}
 		} else {
-			// Keep current status (don't flap). If was online, stay online
-			// but note the transient failure in detail.
+			// Keep current status (don't flap). If was online, mark degraded.
 			newStatus = server.Status
 			if server.Status == models.ServerStatusOnline {
 				newStatus = models.ServerStatusDegraded

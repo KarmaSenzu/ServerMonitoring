@@ -182,10 +182,10 @@ func (c *PostgresConfig) Validate() error {
 }
 
 // Validate checks if Supabase configuration is valid.
+// ProjectRef/ProjectURL are optional (only needed for future Supabase
+// API integrations); the database connection itself only needs the
+// underlying PostgreSQL config.
 func (c *SupabaseConfig) Validate() error {
-	if c.ProjectRef == "" && c.ProjectURL == "" {
-		return fmt.Errorf("supabase project_ref or project_url is required")
-	}
 	if c.Database == nil {
 		return fmt.Errorf("supabase database configuration is required")
 	}

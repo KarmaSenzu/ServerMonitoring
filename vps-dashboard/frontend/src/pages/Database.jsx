@@ -33,6 +33,7 @@ export default function DatabasePage() {
   })
   const [testResult, setTestResult] = useState(null)
   const [configured, setConfigured] = useState(null)
+  const [migrateResult, setMigrateResult] = useState(null)
 
   const statusQ = useQuery({
     queryKey: ['database-status'],
@@ -70,6 +71,22 @@ export default function DatabasePage() {
     },
     onError: (err) => {
       toast.push({ type: 'error', message: describeError(err, 'Save failed') })
+    },
+  })
+
+  const migrateM = useMutation({
+    mutationFn: () => databaseApi.migrate({ type: dbType, ...form, port: Number(form.port) || undefined }),
+    onSuccess: (data) => {
+      setMigrateResult(data)
+      if (data?.ok) {
+        toast.push({ type: 'success', message: `Migrated ${data.total_rows} rows in ${data.duration_ms}ms` })
+      } else {
+        toast.push({ type: 'error', message: data?.error || 'Migration failed' })
+      }
+    },
+    onError: (err) => {
+      setMigrateResult({ ok: false, error: describeError(err, 'Migration failed') })
+      toast.push({ type: 'error', message: describeError(err, 'Migration failed') })
     },
   })
 
@@ -222,6 +239,33 @@ export default function DatabasePage() {
                 Save &amp; Switch
               </button>
             </div>
+
+            <div className="db-migrate-section">
+              <p className="field-help">
+                <strong>Migrate data:</strong> copy all data from the current SQLite
+                database into the target. The source is never modified.
+              </p>
+              <button
+                type="button"
+                className="ghost-btn"
+                onClick={() => migrateM.mutate()}
+                disabled={migrateM.isPending || dbType === 'sqlite' || (!form.host || !form.username || !form.password)}
+              >
+                {migrateM.isPending ? <Spinner size={14} /> : <FiDatabase />}
+                Migrate Data (SQLite → {dbType})
+              </button>
+            </div>
+
+            {migrateResult && (
+              <div className={`db-test-result ${migrateResult.ok ? 'ok' : 'fail'}`}>
+                {migrateResult.ok ? <FiCheckCircle /> : <FiAlertTriangle />}
+                <span>
+                  {migrateResult.ok
+                    ? `Migrated ${migrateResult.total_rows} rows across ${migrateResult.tables} tables in ${migrateResult.duration_ms}ms`
+                    : migrateResult.error || 'Migration failed'}
+                </span>
+              </div>
+            )}
 
             {testResult && (
               <div className={`db-test-result ${testResult.ok ? 'ok' : 'fail'}`}>

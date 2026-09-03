@@ -37,6 +37,7 @@ func (h *DatabaseHandler) RegisterReads(rg *gin.RouterGroup) {
 func (h *DatabaseHandler) RegisterWrites(rg *gin.RouterGroup) {
 	rg.POST("/database/test", h.testConnection)
 	rg.POST("/database/configure", h.configure)
+	rg.POST("/database/migrate", h.migrate)
 }
 
 // dbStatus is the safe API shape returned to the frontend. It never
@@ -327,6 +328,88 @@ func (h *DatabaseHandler) auditDB(c *gin.Context, action, dbType string) {
 func (h *DatabaseHandler) dbError(c *gin.Context, op string, err error) {
 	h.App.Logger.Error().Err(err).Str("op", op).Msg("database_handler_error")
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "server_error", "detail": err.Error()})
+}
+
+// migrate copies data from the current database (SQLite) into a target
+// PostgreSQL/Supabase database. The target schema is created first via
+// migrations, then all tables are copied. The source is read-only and
+// untouched throughout; on failure the target is rolled back.
+func (h *DatabaseHandler) migrate(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 10*time.Minute)
+	defer cancel()
+
+	var req dbConfigDTO
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "detail": err.Error()})
+		return
+	}
+
+	cfg, err := req.toConfig()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_body", "detail": err.Error()})
+		return
+	}
+
+	// Migration only makes sense FROM SQLite TO PostgreSQL/Supabase.
+	if cfg.Type == database.DatabaseTypeSQLite {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_target", "detail": "target must be PostgreSQL or Supabase"})
+		return
+	}
+
+	// Source = the running app's live SQLite connection.
+	source := database.WrapSQLite(h.App.DB)
+
+	// Target = the requested PostgreSQL/Supabase.
+	mgr, err := database.NewManager(cfg)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid_target", "detail": err.Error()})
+		return
+	}
+	if err := mgr.Connect(ctx); err != nil {
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{"ok": false, "error": "connect target: " + err.Error()}})
+		return
+	}
+	defer func() { _ = mgr.Close() }()
+	target, err := mgr.DB()
+	if err != nil {
+		h.dbError(c, "db.migrate.target", err)
+		return
+	}
+
+	// Create schema on target (dialect-aware migrations).
+	if err := target.RunMigrations(ctx); err != nil {
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{"ok": false, "error": "target migrations: " + err.Error()}})
+		return
+	}
+
+	// Copy data.
+	migrator := database.NewMigrator(source, target)
+	stats, err := migrator.GetStats(ctx)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{"ok": false, "error": "stats: " + err.Error()}})
+		return
+	}
+
+	start := time.Now()
+	if err := migrator.Migrate(ctx, nil); err != nil {
+		c.JSON(http.StatusOK, gin.H{"data": gin.H{
+			"ok":       false,
+			"error":    err.Error(),
+			"duration_ms": time.Since(start).Milliseconds(),
+		}})
+		return
+	}
+
+	h.auditDB(c, "database_migrate", string(cfg.Type))
+
+	c.JSON(http.StatusOK, gin.H{"data": gin.H{
+		"ok":           true,
+		"total_rows":   stats.TotalRows,
+		"tables":       len(stats.Tables),
+		"duration_ms":  time.Since(start).Milliseconds(),
+		"restart_required": true,
+		"message":      "Data migrated. Save configuration and restart to switch.",
+	}})
 }
 
 func itoa(n int) string {

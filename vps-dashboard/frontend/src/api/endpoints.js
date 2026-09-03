@@ -267,12 +267,13 @@ export const servers = {
 }
 
 // Database backend management (SQLite/PostgreSQL/Supabase).
-// status/config are read; test/configure are admin-only.
+// status/config are read; test/configure/migrate are admin-only.
 export const databaseApi = {
   status: () => getData('/database/status'),
   config: () => getData('/database/config'),
   test: (payload) => request('post', '/database/test', payload).then(unwrap),
   configure: (payload) => request('post', '/database/configure', payload).then(unwrap),
+  migrate: (payload) => request('post', '/database/migrate', payload).then(unwrap),
 }
 
 // Infrastructure Platform (Phase 2) — SSH engine.

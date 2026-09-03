@@ -87,8 +87,9 @@ HTTP_ADDR=:3001
 LOG_LEVEL=info
 CORS_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
 
-# Database (SQLite default, change to postgres/supabase via database.json)
+# Database (SQLite default, switch via: vpsdash db)
 DB_PATH=$VPSDASH_HOME/vpsdash.db
+VPSDASH_DB_CONFIG=$VPSDASH_HOME/database.json
 
 # Data directories
 BACKUP_DIR=$VPSDASH_HOME/backups
@@ -172,6 +173,7 @@ cmd_start() {
     export ENV="${ENV:-production}"
     export HTTP_ADDR="${HTTP_ADDR:-:3001}"
     export DB_PATH="${DB_PATH:-$VPSDASH_HOME/vpsdash.db}"
+    export VPSDASH_DB_CONFIG="${VPSDASH_DB_CONFIG:-$VPSDASH_HOME/database.json}"
     export JWT_SECRET="${JWT_SECRET}"
     export BOOTSTRAP_ADMIN_USERNAME="${BOOTSTRAP_ADMIN_USERNAME:-admin}"
     export BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD}"
@@ -179,6 +181,8 @@ cmd_start() {
     export CORS_ORIGINS="${CORS_ORIGINS:-http://localhost:3001,http://127.0.0.1:3001,http://0.0.0.0:3001}"
     export BACKUP_DIR="${BACKUP_DIR:-$VPSDASH_HOME/backups}"
     export SSH_KEYS_DIR="${SSH_KEYS_DIR:-$VPSDASH_HOME/ssh-keys}"
+    export SUPABASE_DB_PASSWORD="${SUPABASE_DB_PASSWORD:-}"
+    export POSTGRES_DB_PASSWORD="${POSTGRES_DB_PASSWORD:-}"
     
     # Start in background
     nohup "$BINARY" > "$LOG_FILE" 2>&1 &
@@ -416,6 +420,178 @@ cmd_update() {
     fi
 }
 
+# === DATABASE SETUP COMMAND ===
+# Interactive wizard to switch the database backend (SQLite/PostgreSQL/Supabase).
+# Writes database.json and stores the password as an env-var reference,
+# so no plaintext password lands in the config file.
+cmd_db() {
+    DB_CONFIG_FILE="$VPSDASH_HOME/database.json"
+    mkdir -p "$VPSDASH_HOME"
+
+    echo ""
+    echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║        Database Connection Setup Wizard          ║${NC}"
+    echo -e "${CYAN}╚══════════════════════════════════════════════════╝${NC}"
+    echo ""
+
+    # Show current config if exists
+    if [ -f "$DB_CONFIG_FILE" ]; then
+        echo -e "${YELLOW}Current database config:${NC}"
+        cat "$DB_CONFIG_FILE" | grep -v password | sed 's/^/  /'
+        echo ""
+    fi
+
+    # Step 1: choose database type
+    echo -e "${GREEN}Step 1/4 — Choose database type:${NC}"
+    echo "  1) SQLite (embedded, no setup)"
+    echo "  2) PostgreSQL (self-hosted)"
+    echo "  3) Supabase (managed PostgreSQL)"
+    echo ""
+    read -p "Choice [1-3]: " DB_CHOICE
+    echo ""
+
+    case "$DB_CHOICE" in
+        1|"")
+            echo -e "${CYAN}Configuring SQLite (default)...${NC}"
+            cat > "$DB_CONFIG_FILE" <<EOF
+{
+  "type": "sqlite",
+  "sqlite": {
+    "path": "$VPSDASH_HOME/vpsdash.db"
+  }
+}
+EOF
+            info "✓ SQLite configured."
+            echo ""
+            ;;
+        2)
+            cmd_db_pg "postgres"
+            ;;
+        3)
+            cmd_db_pg "supabase"
+            ;;
+        *)
+            error "Invalid choice: $DB_CHOICE"
+            exit 1
+            ;;
+    esac
+
+    echo -e "${YELLOW}Database config written to: $DB_CONFIG_FILE${NC}"
+    echo ""
+    echo -e "${YELLOW}Restarting server to apply changes...${NC}"
+    if is_running; then
+        cmd_restart
+    else
+        warn "Server is not running. Start it with: vpsdash start"
+    fi
+}
+
+# Helper: prompt for PostgreSQL/Supabase connection details and write config.
+cmd_db_pg() {
+    local DB_TYPE="$1"  # "postgres" or "supabase"
+    local LABEL
+    if [ "$DB_TYPE" = "supabase" ]; then
+        LABEL="Supabase"
+    else
+        LABEL="PostgreSQL"
+    fi
+
+    echo -e "${GREEN}Step 2/4 — $LABEL connection details:${NC}"
+    echo ""
+    read -p "Host (e.g. aws-0-ap-southeast-1.pooler.supabase.com): " DB_HOST
+    read -p "Port [5432]: " DB_PORT
+    DB_PORT=${DB_PORT:-5432}
+    read -p "Database name [postgres]: " DB_NAME
+    DB_NAME=${DB_NAME:-postgres}
+    read -p "Username (e.g. postgres.abcdefghijklm): " DB_USER
+    read -s -p "Password: " DB_PASS
+    echo ""
+    echo ""
+
+    if [ -z "$DB_HOST" ] || [ -z "$DB_USER" ] || [ -z "$DB_PASS" ]; then
+        error "❌ Host, username, and password are required."
+        exit 1
+    fi
+
+    # Step 3: optional project ref for Supabase
+    local PROJECT_REF=""
+    local PROJECT_URL=""
+    if [ "$DB_TYPE" = "supabase" ]; then
+        echo -e "${GREEN}Step 3/4 — Supabase project info (optional):${NC}"
+        echo ""
+        read -p "Project ref (from https://<ref>.supabase.co, leave empty to skip): " PROJECT_REF
+        if [ -n "$PROJECT_REF" ]; then
+            PROJECT_URL="https://${PROJECT_REF}.supabase.co"
+        fi
+        echo ""
+    fi
+
+    # Step 4: SSL mode
+    echo -e "${GREEN}Step 4/4 — SSL mode:${NC}"
+    echo "  1) require (recommended for Supabase)"
+    echo "  2) verify-full"
+    echo "  3) disable"
+    echo ""
+    read -p "Choice [1-3]: " SSL_CHOICE
+    echo ""
+    case "$SSL_CHOICE" in
+        2) SSL_MODE="verify-full" ;;
+        3) SSL_MODE="disable" ;;
+        *) SSL_MODE="require" ;;
+    esac
+
+    # Store password as env-var reference in config.env
+    ENV_VAR_NAME="SUPABASE_DB_PASSWORD"
+    if [ "$DB_TYPE" = "postgres" ]; then
+        ENV_VAR_NAME="POSTGRES_DB_PASSWORD"
+    fi
+
+    # Remove existing env var line, then append new one
+    grep -v "^${ENV_VAR_NAME}=" "$CONFIG_FILE" > "$CONFIG_FILE.tmp" 2>/dev/null || true
+    mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+    echo "${ENV_VAR_NAME}=${DB_PASS}" >> "$CONFIG_FILE"
+    chmod 600 "$CONFIG_FILE"
+
+    # Write database.json with password as $ENV_VAR reference (no plaintext)
+    if [ "$DB_TYPE" = "supabase" ]; then
+        cat > "$DB_CONFIG_FILE" <<EOF
+{
+  "type": "supabase",
+  "supabase": {
+    "project_ref": "$PROJECT_REF",
+    "project_url": "$PROJECT_URL",
+    "database": {
+      "host": "$DB_HOST",
+      "port": $DB_PORT,
+      "database": "$DB_NAME",
+      "username": "$DB_USER",
+      "password": "\$$ENV_VAR_NAME",
+      "ssl_mode": "$SSL_MODE"
+    }
+  }
+}
+EOF
+    else
+        cat > "$DB_CONFIG_FILE" <<EOF
+{
+  "type": "postgres",
+  "postgres": {
+    "host": "$DB_HOST",
+    "port": $DB_PORT,
+    "database": "$DB_NAME",
+    "username": "$DB_USER",
+    "password": "\$$ENV_VAR_NAME",
+    "ssl_mode": "$SSL_MODE"
+  }
+}
+EOF
+    fi
+
+    chmod 600 "$DB_CONFIG_FILE"
+    info "✓ $LABEL configured. Password stored in $CONFIG_FILE as $ENV_VAR_NAME"
+    echo ""
+}
+
 # === Main dispatch ===
 
 case "${1:-start}" in
@@ -443,6 +619,9 @@ case "${1:-start}" in
     update|upgrade)
         cmd_update
         ;;
+    db|database)
+        cmd_db
+        ;;
     help|--help|-h)
         echo ""
         echo -e "${CYAN}╔══════════════════════════════════════════════════╗${NC}"
@@ -459,6 +638,7 @@ case "${1:-start}" in
         echo -e "  ${CYAN}status${NC}     Check if running (shows PID, uptime, memory)"
         echo -e "  ${CYAN}logs${NC}       Tail logs in real-time (Ctrl+C to exit)"
         echo -e "  ${CYAN}config${NC}     Show config file & admin credentials"
+        echo -e "  ${CYAN}db${NC}         Switch database (SQLite/PostgreSQL/Supabase)"
         echo -e "  ${CYAN}update${NC}     Download & install latest version from GitHub"
         echo -e "  ${CYAN}--version${NC}  Show version info"
         echo -e "  ${CYAN}help${NC}       Show this help message"
@@ -469,6 +649,7 @@ case "${1:-start}" in
         echo -e "  ${YELLOW}vpsdash logs${NC}         # View live logs"
         echo -e "  ${YELLOW}vpsdash stop${NC}         # Stop server"
         echo -e "  ${YELLOW}vpsdash restart${NC}     # Restart after config change"
+        echo -e "  ${YELLOW}vpsdash db${NC}           # Switch to Supabase/PostgreSQL"
         echo -e "  ${YELLOW}vpsdash update${NC}       # Update to latest version from GitHub"
         echo -e "  ${YELLOW}vpsdash config${NC}      # Show credentials & config path"
         echo ""

@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
+
+	"vps-dashboard-api/internal/crypto"
 )
 
 // Config holds the configuration for a database connection.
@@ -253,8 +256,21 @@ func (c *PostgresConfig) DSN() (string, error) {
 	}
 	
 	password := c.Password
-	// Resolve password from environment variable if reference
-	if len(password) > 0 && password[0] == '$' {
+	// Resolve password in priority order:
+	// 1. Encrypted value ("enc:...") — decrypt with JWT_SECRET-derived key
+	// 2. Environment variable reference ("$ENV_VAR_NAME")
+	// 3. Plaintext (backward compat)
+	if strings.HasPrefix(password, "enc:") {
+		key := crypto.GetEncryptionKey()
+		if key == nil {
+			return "", fmt.Errorf("JWT_SECRET not set — cannot decrypt database password")
+		}
+		decrypted, err := crypto.Decrypt(password, key)
+		if err != nil {
+			return "", fmt.Errorf("decrypt database password: %w", err)
+		}
+		password = decrypted
+	} else if len(password) > 0 && password[0] == '$' {
 		envVar := password[1:]
 		password = os.Getenv(envVar)
 		if password == "" {

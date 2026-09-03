@@ -14,11 +14,12 @@ import (
 type ServerDiscovery struct {
 	ID           string `json:"id"`
 	ServerID     string `json:"server_id"`
-	PM2JSON      string `json:"pm2_json"`
-	DockerJSON   string `json:"docker_json"`
-	TunnelsJSON  string `json:"tunnels_json"`
-	SystemdJSON  string `json:"systemd_json"`
-	PortsJSON    string `json:"ports_json"`
+	PM2JSON          string `json:"pm2_json"`
+	DockerJSON       string `json:"docker_json"`
+	TunnelsJSON      string `json:"tunnels_json"`
+	CloudflareJSON   string `json:"cloudflare_json"`
+	SystemdJSON      string `json:"systemd_json"`
+	PortsJSON        string `json:"ports_json"`
 	Hostname     string `json:"hostname"`
 	Kernel       string `json:"kernel"`
 	OSName       string `json:"os_name"`
@@ -65,12 +66,12 @@ func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 
 	_, err := r.DB.ExecContext(ctx, `
 		INSERT INTO server_discoveries (
-			id, server_id, pm2_json, docker_json, tunnels_json,
+			id, server_id, pm2_json, docker_json, tunnels_json, cloudflare_json,
 			systemd_json, ports_json, hostname, kernel, os_name,
 			discovered_at, first_seen, last_status
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
-		d.ID, d.ServerID, d.PM2JSON, d.DockerJSON, d.TunnelsJSON,
+		d.ID, d.ServerID, d.PM2JSON, d.DockerJSON, d.TunnelsJSON, d.CloudflareJSON,
 		d.SystemdJSON, d.PortsJSON, d.Hostname, d.Kernel, d.OSName,
 		d.DiscoveredAt, d.FirstSeen, d.LastStatus,
 	)
@@ -83,7 +84,7 @@ func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 // Get retrieves the latest discovery data for a server.
 func (r *DiscoveryRepo) Get(ctx context.Context, serverID string) (*ServerDiscovery, error) {
 	row := r.DB.QueryRowContext(ctx, `
-		SELECT id, server_id, pm2_json, docker_json, tunnels_json,
+		SELECT id, server_id, pm2_json, docker_json, tunnels_json, cloudflare_json,
 		       systemd_json, ports_json, hostname, kernel, os_name,
 		       discovered_at, first_seen, last_status
 		FROM server_discoveries
@@ -92,7 +93,7 @@ func (r *DiscoveryRepo) Get(ctx context.Context, serverID string) (*ServerDiscov
 
 	var d ServerDiscovery
 	err := row.Scan(
-		&d.ID, &d.ServerID, &d.PM2JSON, &d.DockerJSON, &d.TunnelsJSON,
+		&d.ID, &d.ServerID, &d.PM2JSON, &d.DockerJSON, &d.TunnelsJSON, &d.CloudflareJSON,
 		&d.SystemdJSON, &d.PortsJSON, &d.Hostname, &d.Kernel, &d.OSName,
 		&d.DiscoveredAt, &d.FirstSeen, &d.LastStatus,
 	)

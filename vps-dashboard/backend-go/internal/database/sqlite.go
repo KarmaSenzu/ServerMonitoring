@@ -35,6 +35,22 @@ func NewSQLiteDB(config *Config) (*SQLiteDB, error) {
 	}, nil
 }
 
+// WrapSQLite wraps an already-open *sql.DB connection as a Database
+// interface (used for migration where the source is the running app's
+// live SQLite connection). The caller retains ownership of the *sql.DB;
+// Close() on the wrapper is a no-op.
+func WrapSQLite(conn *sql.DB) *SQLiteDB {
+	return &SQLiteDB{
+		config: &Config{
+			Type: DatabaseTypeSQLite,
+			SQLite: &SQLiteConfig{
+				Path: "<live-connection>",
+			},
+		},
+		conn: conn,
+	}
+}
+
 // Open opens the SQLite database connection.
 func (db *SQLiteDB) Open(ctx context.Context) error {
 	// Ensure directory exists

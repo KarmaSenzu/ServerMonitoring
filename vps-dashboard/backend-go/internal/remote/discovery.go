@@ -22,6 +22,9 @@ type DiscoveryResult struct {
 	// SSH tunnels (reverse port forwards seen in /proc/net/tcp)
 	SSHTunnels []SSHTunnelInfo `json:"ssh_tunnels,omitempty"`
 
+	// Cloudflare tunnels (cloudflared processes)
+	CloudflareTunnels []CloudflareTunnelInfo `json:"cloudflare_tunnels,omitempty"`
+
 	// Running services (systemd units that are active)
 	SystemdServices []SystemdService `json:"systemd_services,omitempty"`
 
@@ -70,6 +73,13 @@ type SystemdService struct {
 	Type   string `json:"type"`  // service/socket/timer
 }
 
+// CloudflareTunnelInfo represents a Cloudflare Tunnel (cloudflared) process.
+type CloudflareTunnelInfo struct {
+	Name   string `json:"name"`   // tunnel name (from --name flag or config)
+	PID    string `json:"pid"`    // process ID
+	Status string `json:"status"` // running
+}
+
 // PortInfo represents a listening port.
 type PortInfo struct {
 	Port    int    `json:"port"`
@@ -91,6 +101,9 @@ const discoveryCommand = `echo "=PM2="; ` +
 	`echo "=TUNNELS="; ` +
 	// SSH tunnels: check for reverse port forwards in process list
 	`ps aux 2>/dev/null | grep -E 'ssh.*-R|ssh.*-L|ssh.*-D' | grep -v grep || echo ''; ` +
+	`echo "=CLOUDFLARED="; ` +
+	// Cloudflare tunnels: cloudflared tunnel processes
+	`ps aux 2>/dev/null | grep -E 'cloudflared.*tunnel' | grep -v grep || echo ''; ` +
 	`echo "=SYSTEMD="; ` +
 	// Systemd: list active services
 	`systemctl list-units --type=service --state=running --no-pager --no-legend 2>/dev/null | head -20 || echo ''; ` +
@@ -136,6 +149,8 @@ func parseDiscovery(stdout string) *DiscoveryResult {
 			result.DockerContainers = parseDocker(data)
 		case "TUNNELS":
 			result.SSHTunnels = parseTunnels(data)
+		case "CLOUDFLARED":
+			result.CloudflareTunnels = parseCloudflared(data)
 		case "SYSTEMD":
 			result.SystemdServices = parseSystemd(data)
 		case "PORTS":
@@ -257,6 +272,52 @@ func parseTunnels(data string) []SSHTunnelInfo {
 				Type: "active",
 			})
 		}
+	}
+
+	return tunnels
+}
+
+// parseCloudflared parses cloudflared tunnel process lines.
+// Each line is a `ps aux` output; the tunnel name (if present) appears
+// after --name or in the config file path.
+func parseCloudflared(data string) []CloudflareTunnelInfo {
+	data = strings.TrimSpace(data)
+	if data == "" {
+		return nil
+	}
+
+	var tunnels []CloudflareTunnelInfo
+	for _, line := range strings.Split(data, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		// ps aux fields: USER PID %CPU %MEM VSZ RSS TTY STAT START TIME COMMAND
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			continue
+		}
+		pid := fields[1]
+
+		// Extract tunnel name from --name flag or from config path
+		name := ""
+		if idx := strings.Index(line, "--name"); idx >= 0 {
+			rest := line[idx+len("--name"):]
+			rest = strings.TrimSpace(rest)
+			if sp := strings.IndexAny(rest, " \t"); sp >= 0 {
+				name = rest[:sp]
+			} else {
+				name = rest
+			}
+		} else {
+			name = "cloudflared"
+		}
+
+		tunnels = append(tunnels, CloudflareTunnelInfo{
+			Name:   name,
+			PID:    pid,
+			Status: "running",
+		})
 	}
 
 	return tunnels

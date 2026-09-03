@@ -264,6 +264,18 @@ export const servers = {
   metrics: (id) => getData(`/servers/${encodeURIComponent(id)}/metrics`),
   history: (id, { limit = 100 } = {}) =>
     getData(`/servers/${encodeURIComponent(id)}/history`, { limit }),
+  // Phase 3 — auto-discovered services (PM2/Docker/tunnels/ports/cloudflare).
+  discovery: (id) => getData(`/servers/${encodeURIComponent(id)}/discovery`),
+}
+
+// Database backend management (SQLite/PostgreSQL/Supabase).
+// status/config are read; test/configure/migrate are admin-only.
+export const databaseApi = {
+  status: () => getData('/database/status'),
+  config: () => getData('/database/config'),
+  test: (payload) => request('post', '/database/test', payload).then(unwrap),
+  configure: (payload) => request('post', '/database/configure', payload).then(unwrap),
+  migrate: (payload) => request('post', '/database/migrate', payload).then(unwrap),
 }
 
 // Infrastructure Platform (Phase 2) — SSH engine.

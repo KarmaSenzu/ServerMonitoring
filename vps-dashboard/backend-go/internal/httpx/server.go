@@ -63,6 +63,7 @@ func BuildEngine(a *app.App) *gin.Engine {
 	cloudH := handlers.NewCloudHandler(a)
 	searchH := handlers.NewSearchHandler(a)
 	mcpH := handlers.NewMCPHandler(a)
+	dbH := handlers.NewDatabaseHandler(a)
 
 	// Public auth routes (login/logout) live on the root group.
 	public := r.Group("")
@@ -96,6 +97,7 @@ func BuildEngine(a *app.App) *gin.Engine {
 	sshTunnelsH.RegisterReads(protected)
 	cloudH.RegisterReads(protected)
 	searchH.RegisterReads(protected)
+	dbH.RegisterReads(protected)
 
 	// Mutating routes — operator-level (admin + operator can access).
 	// Per §32: OPERATOR can restart containers, run commands, deploy,
@@ -144,6 +146,7 @@ func BuildEngine(a *app.App) *gin.Engine {
 	commandsH.RegisterWrites(adminOnly)
 	sshTunnelsH.RegisterWrites(adminOnly)
 	cloudH.RegisterWrites(adminOnly)
+	dbH.RegisterWrites(adminOnly)
 
 	// Serve embedded frontend (SPA fallback). This must come last so API
 	// routes take precedence. If the frontend wasn't embedded at build time,

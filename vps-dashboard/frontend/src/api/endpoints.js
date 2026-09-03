@@ -264,6 +264,8 @@ export const servers = {
   metrics: (id) => getData(`/servers/${encodeURIComponent(id)}/metrics`),
   history: (id, { limit = 100 } = {}) =>
     getData(`/servers/${encodeURIComponent(id)}/history`, { limit }),
+  // Phase 3 — auto-discovered services (PM2/Docker/tunnels/ports/cloudflare).
+  discovery: (id) => getData(`/servers/${encodeURIComponent(id)}/discovery`),
 }
 
 // Database backend management (SQLite/PostgreSQL/Supabase).

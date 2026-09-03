@@ -131,6 +131,14 @@ export default function Dashboard() {
     refetchInterval: 30000,
   })
 
+  // Remote server discovered services (PM2/Docker/tunnels/cloudflare/ports)
+  const remoteDiscoveryQ = useQuery({
+    queryKey: ['server-discovery', selectedServerId],
+    queryFn: () => serversApi.discovery(selectedServerId),
+    enabled: !!selectedServerId,
+    refetchInterval: 30000,
+  })
+
   const eventsQ = useQuery({
     queryKey: ['dashboard-events'],
     queryFn: () => events.list({ limit: 15 }),
@@ -631,6 +639,83 @@ export default function Dashboard() {
       </div>
         )
       })()}
+
+      {/* Remote server discovered services (PM2/Docker/Cloudflare/ports) */}
+      {selectedServerId && remoteDiscoveryQ.data && (
+        <div className="section-header">
+          <div className="section-title">
+            <FiActivity />
+            <h2>Discovered Services — {selectedServer?.name || 'remote'}</h2>
+          </div>
+          <span className="last-updated">auto-synced via SSH</span>
+        </div>
+      )}
+
+      {selectedServerId && remoteDiscoveryQ.data && (
+        <div className="stats-grid">
+          {(() => {
+            const d = remoteDiscoveryQ.data
+            const parse = (s) => {
+              try { return JSON.parse(s || '[]') } catch { return [] }
+            }
+            const pm2 = parse(d.pm2_json)
+            const docker = parse(d.docker_json)
+            const cloudflare = parse(d.cloudflare_json)
+            const tunnels = parse(d.tunnels_json)
+            const ports = parse(d.ports_json)
+            return (
+              <>
+                <div className="stat-card glass">
+                  <div className="stat-header">
+                    <div className="stat-icon pm2"><FiActivity /></div>
+                    <span className="stat-label">PM2 Processes</span>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-value">{pm2.length}</span>
+                    <span className="stat-sub">
+                      {pm2.filter((p) => p.status === 'online').length} online
+                    </span>
+                  </div>
+                </div>
+                <div className="stat-card glass">
+                  <div className="stat-header">
+                    <div className="stat-icon docker"><FiBox /></div>
+                    <span className="stat-label">Docker Containers</span>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-value">{docker.length}</span>
+                    <span className="stat-sub">
+                      {docker.filter((c) => c.state === 'running').length} running
+                    </span>
+                  </div>
+                </div>
+                <div className="stat-card glass">
+                  <div className="stat-header">
+                    <div className="stat-icon tunnel"><FiCloud /></div>
+                    <span className="stat-label">Cloudflare Tunnels</span>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-value">{cloudflare.length}</span>
+                    <span className="stat-sub">{cloudflare.map((t) => t.name).join(', ') || 'none'}</span>
+                  </div>
+                </div>
+                <div className="stat-card glass">
+                  <div className="stat-header">
+                    <div className="stat-icon network"><FiActivity /></div>
+                    <span className="stat-label">Listening Ports</span>
+                  </div>
+                  <div className="stat-info">
+                    <span className="stat-value">{ports.length}</span>
+                    <span className="stat-sub">
+                      {ports.slice(0, 4).map((p) => p.port).join(', ')}{ports.length > 4 ? '…' : ''}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )
+          })()}
+        </div>
+      )}
 
       {/* Local-only cards: tunnels, alerts, deployments, backups */}
       {!selectedServerId && (

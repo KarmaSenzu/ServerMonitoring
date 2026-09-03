@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -177,23 +178,28 @@ func (h *MCPHandler) processToolCall(ctx context.Context, req mcpRequest) mcpRes
 }
 
 // checkAPIKey validates the API key from Authorization header or
-// X-API-Key header.
+// X-API-Key header using constant-time comparison to prevent timing attacks.
 func (h *MCPHandler) checkAPIKey(c *gin.Context) bool {
 	key := h.Svc.APIKey()
 	if key == "" {
 		// No API key configured = deny all.
 		return false
 	}
-	// Check X-API-Key header first.
-	if provided := c.GetHeader("X-API-Key"); provided == key {
-		return true
+	// Check X-API-Key header first (constant-time compare).
+	if provided := c.GetHeader("X-API-Key"); provided != "" {
+		if subtle.ConstantTimeCompare([]byte(provided), []byte(key)) == 1 {
+			return true
+		}
 	}
 	// Check Authorization: Bearer <key>.
 	auth := c.GetHeader("Authorization")
 	const prefix = "Bearer "
 	if len(auth) > len(prefix) && strings.EqualFold(auth[:len(prefix)], prefix) {
-		if strings.TrimSpace(auth[len(prefix):]) == key {
-			return true
+		provided := strings.TrimSpace(auth[len(prefix):])
+		if provided != "" {
+			if subtle.ConstantTimeCompare([]byte(provided), []byte(key)) == 1 {
+				return true
+			}
 		}
 	}
 	return false

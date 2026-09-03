@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"time"
 
@@ -158,8 +159,19 @@ func (tm *TunnelManager) Disconnect(tunnelID string) error {
 	return lt.Close()
 }
 
+// maxConcurrentTunnels limits the number of concurrent forwarded connections
+// per tunnel to prevent unbounded goroutine creation (DoS protection).
+const maxConcurrentTunnels = 100
+
+// keepaliveInterval is how often we send a keepalive request to the SSH
+// server to detect dead connections and keep the tunnel alive through
+// idle timeouts.
+const keepaliveInterval = 30 * time.Second
+
 // startLocal creates a local port forward: listen on localAddr,
 // forward connections to remoteAddr via the SSH client.
+// Uses a bounded semaphore to prevent unbounded goroutine creation.
+// Starts a keepalive goroutine to detect dead connections.
 func (tm *TunnelManager) startLocal(ctx context.Context, lt *LiveTunnel, client *ssh.Client, localAddr, remoteAddr string) error {
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
@@ -167,15 +179,30 @@ func (tm *TunnelManager) startLocal(ctx context.Context, lt *LiveTunnel, client 
 	}
 	lt.listener = listener
 
+	// Start keepalive goroutine
+	go tm.keepalive(ctx, lt, client)
+
+	// Bounded semaphore: max 100 concurrent forwarded connections
+	sem := make(chan struct{}, maxConcurrentTunnels)
+
 	go func() {
 		defer close(lt.done)
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
+				lt.setStatus("disconnected", "listener closed")
 				return
 			}
+			// Acquire semaphore (non-blocking if slots available)
+			select {
+			case sem <- struct{}{}:
+			default:
+				// At capacity — reject connection
+				_ = conn.Close()
+				continue
+			}
 			go func(c net.Conn) {
-				defer func() { _ = c.Close() }()
+				defer func() { _ = c.Close(); <-sem }()
 				remote, err := client.Dial("tcp", remoteAddr)
 				if err != nil {
 					lt.setStatus("error", "remote dial: "+err.Error())
@@ -193,6 +220,7 @@ func (tm *TunnelManager) startLocal(ctx context.Context, lt *LiveTunnel, client 
 
 // startRemote creates a remote port forward: the SSH server listens on
 // remoteAddr and forwards connections back to localAddr.
+// Uses a bounded semaphore to prevent unbounded goroutine creation.
 func (tm *TunnelManager) startRemote(ctx context.Context, lt *LiveTunnel, client *ssh.Client, localAddr, remoteAddr string) error {
 	listener, err := client.Listen("tcp", remoteAddr)
 	if err != nil {
@@ -200,15 +228,28 @@ func (tm *TunnelManager) startRemote(ctx context.Context, lt *LiveTunnel, client
 	}
 	lt.listener = listener
 
+	// Start keepalive goroutine
+	go tm.keepalive(ctx, lt, client)
+
+	// Bounded semaphore
+	sem := make(chan struct{}, maxConcurrentTunnels)
+
 	go func() {
 		defer close(lt.done)
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
+				lt.setStatus("disconnected", "listener closed")
 				return
 			}
+			select {
+			case sem <- struct{}{}:
+			default:
+				_ = conn.Close()
+				continue
+			}
 			go func(c net.Conn) {
-				defer func() { _ = c.Close() }()
+				defer func() { _ = c.Close(); <-sem }()
 				local, err := net.Dial("tcp", localAddr)
 				if err != nil {
 					lt.setStatus("error", "local dial: "+err.Error())
@@ -226,26 +267,76 @@ func (tm *TunnelManager) startRemote(ctx context.Context, lt *LiveTunnel, client
 
 // startSocks creates a dynamic SOCKS5 proxy: listen on localAddr,
 // negotiate SOCKS5 per connection, then dial the requested target via
-// the SSH client.
+// the SSH client. Uses a bounded semaphore.
 func (tm *TunnelManager) startSocks(ctx context.Context, lt *LiveTunnel, client *ssh.Client, localAddr string) error {
+	// Enforce loopback-only binding for SOCKS to prevent open proxy
+	if !strings.HasPrefix(localAddr, "127.0.0.1") && !strings.HasPrefix(localAddr, "localhost") && !strings.HasPrefix(localAddr, "::1") {
+		return fmt.Errorf("tunnel: SOCKS proxy must bind to loopback (127.0.0.1), got %q", localAddr)
+	}
+
 	listener, err := net.Listen("tcp", localAddr)
 	if err != nil {
 		return fmt.Errorf("tunnel: socks listen %q: %w", localAddr, err)
 	}
 	lt.listener = listener
 
+	// Start keepalive goroutine
+	go tm.keepalive(ctx, lt, client)
+
+	// Bounded semaphore
+	sem := make(chan struct{}, maxConcurrentTunnels)
+
 	go func() {
 		defer close(lt.done)
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
+				lt.setStatus("disconnected", "listener closed")
 				return
 			}
-			go handleSocksConnection(client, conn)
+			select {
+			case sem <- struct{}{}:
+			default:
+				_ = conn.Close()
+				continue
+			}
+			go func(c net.Conn) {
+				defer func() { _ = c.Close(); <-sem }()
+				handleSocksConnection(client, conn)
+			}(conn)
 		}
 	}()
 
 	return nil
+}
+
+// keepalive sends periodic keepalive requests to the SSH server to:
+// 1. Keep the connection alive through idle timeouts
+// 2. Detect dead connections (network drop, server restart)
+// On failure, sets tunnel status to "disconnected" and closes the tunnel.
+func (tm *TunnelManager) keepalive(ctx context.Context, lt *LiveTunnel, client *ssh.Client) {
+	ticker := time.NewTicker(keepaliveInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			// Send keepalive request — if it fails, the connection is dead
+			_, _, err := client.SendRequest("keepalive@openssh.com", true, nil)
+			if err != nil {
+				lt.setStatus("disconnected", "keepalive failed: "+err.Error())
+				// Close the tunnel — the listener will unblock and the accept
+				// loop will exit, closing lt.done
+				if lt.listener != nil {
+					_ = lt.listener.Close()
+				}
+				_ = client.Close()
+				return
+			}
+		}
+	}
 }
 
 // handleSocksConnection serves a single SOCKS5 client.
@@ -326,6 +417,3 @@ func handleSocksConnection(sshClient *ssh.Client, client net.Conn) {
 	go func() { _, _ = io.Copy(remote, client); _ = remote.Close() }()
 	_, _ = io.Copy(client, remote)
 }
-
-// time guard (used by future heartbeat).
-var _ = time.Now

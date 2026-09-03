@@ -23,6 +23,8 @@ type ServerDiscovery struct {
 	Kernel       string `json:"kernel"`
 	OSName       string `json:"os_name"`
 	DiscoveredAt string `json:"discovered_at"`
+	FirstSeen    string `json:"first_seen"`    // when this server was first discovered
+	LastStatus    string `json:"last_status"`   // "active" or "missing"
 }
 
 // DiscoveryRepo provides access to the server_discoveries table.
@@ -36,7 +38,8 @@ func NewDiscoveryRepo(db *sql.DB) *DiscoveryRepo {
 }
 
 // Upsert inserts or replaces the discovery data for a server.
-// There is at most one row per server (upsert by server_id).
+// Preserves first_seen from existing row to track when the server was
+// first discovered. Sets last_status to "active" on success.
 func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 	if d.ID == "" {
 		d.ID = uuid.NewString()
@@ -44,9 +47,17 @@ func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 	if d.DiscoveredAt == "" {
 		d.DiscoveredAt = time.Now().UTC().Format(time.RFC3339)
 	}
+	d.LastStatus = "active"
+
+	// Preserve first_seen from existing row
+	existing, _ := r.Get(ctx, d.ServerID)
+	if existing != nil && existing.FirstSeen != "" {
+		d.FirstSeen = existing.FirstSeen
+	} else if d.FirstSeen == "" {
+		d.FirstSeen = d.DiscoveredAt
+	}
 
 	// Delete existing row for this server, then insert new one.
-	// This is simpler than UPDATE ... WHERE and works on both SQLite and Postgres.
 	if _, err := r.DB.ExecContext(ctx,
 		`DELETE FROM server_discoveries WHERE server_id = ?`, d.ServerID); err != nil {
 		return fmt.Errorf("discovery: delete old: %w", err)
@@ -55,11 +66,13 @@ func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 	_, err := r.DB.ExecContext(ctx, `
 		INSERT INTO server_discoveries (
 			id, server_id, pm2_json, docker_json, tunnels_json,
-			systemd_json, ports_json, hostname, kernel, os_name, discovered_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			systemd_json, ports_json, hostname, kernel, os_name,
+			discovered_at, first_seen, last_status
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`,
 		d.ID, d.ServerID, d.PM2JSON, d.DockerJSON, d.TunnelsJSON,
-		d.SystemdJSON, d.PortsJSON, d.Hostname, d.Kernel, d.OSName, d.DiscoveredAt,
+		d.SystemdJSON, d.PortsJSON, d.Hostname, d.Kernel, d.OSName,
+		d.DiscoveredAt, d.FirstSeen, d.LastStatus,
 	)
 	if err != nil {
 		return fmt.Errorf("discovery: insert: %w", err)
@@ -71,7 +84,8 @@ func (r *DiscoveryRepo) Upsert(ctx context.Context, d ServerDiscovery) error {
 func (r *DiscoveryRepo) Get(ctx context.Context, serverID string) (*ServerDiscovery, error) {
 	row := r.DB.QueryRowContext(ctx, `
 		SELECT id, server_id, pm2_json, docker_json, tunnels_json,
-		       systemd_json, ports_json, hostname, kernel, os_name, discovered_at
+		       systemd_json, ports_json, hostname, kernel, os_name,
+		       discovered_at, first_seen, last_status
 		FROM server_discoveries
 		WHERE server_id = ?
 	`, serverID)
@@ -79,11 +93,12 @@ func (r *DiscoveryRepo) Get(ctx context.Context, serverID string) (*ServerDiscov
 	var d ServerDiscovery
 	err := row.Scan(
 		&d.ID, &d.ServerID, &d.PM2JSON, &d.DockerJSON, &d.TunnelsJSON,
-		&d.SystemdJSON, &d.PortsJSON, &d.Hostname, &d.Kernel, &d.OSName, &d.DiscoveredAt,
+		&d.SystemdJSON, &d.PortsJSON, &d.Hostname, &d.Kernel, &d.OSName,
+		&d.DiscoveredAt, &d.FirstSeen, &d.LastStatus,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil // No discovery data yet
+			return nil, nil
 		}
 		return nil, fmt.Errorf("discovery: get: %w", err)
 	}

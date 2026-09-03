@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,13 +33,37 @@ func NewTerminalHandler(a *app.App) *TerminalHandler {
 	}
 }
 
-// upgrader allows connections from any origin. CORS is enforced at the
-// HTTP layer; the WebSocket handshake itself is safe within the same
-// origin or via the reverse proxy.
+// upgrader checks the Origin header against the configured CORS_ORIGINS
+// allowlist to prevent WebSocket hijacking (CSRF). If CORS_ORIGINS is
+// not set or contains "*", all origins are allowed (dev mode).
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+	CheckOrigin:     checkWSOrigin,
+}
+
+// checkWSOrigin validates the Origin header against CORS_ORIGINS.
+// In development (no CORS_ORIGINS set), all origins are allowed.
+func checkWSOrigin(r *http.Request) bool {
+	allowed := os.Getenv("CORS_ORIGINS")
+	if allowed == "" || strings.Contains(allowed, "*") {
+		return true // Dev mode — allow all
+	}
+
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true // Same-origin (no Origin header = same host)
+	}
+
+	// Check if origin is in the allowlist
+	for _, allowed := range strings.Split(allowed, ",") {
+		allowed = strings.TrimSpace(allowed)
+		if origin == allowed {
+			return true
+		}
+	}
+
+	return false // Origin not in allowlist
 }
 
 // TerminalMessage is the JSON envelope exchanged over the WebSocket.

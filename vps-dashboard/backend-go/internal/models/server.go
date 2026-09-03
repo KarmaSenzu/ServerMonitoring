@@ -65,7 +65,7 @@ type Server struct {
 	SSHUsername        string    `json:"ssh_username"`
 	CredentialType     string    `json:"credential_type"`
 	CredentialRef      string    `json:"credential_ref"`
-	CredentialPassword string    `json:"credential_password,omitempty"` // direct password (when type=password)
+	CredentialPassword string    `json:"-"` // encrypted at rest, never exposed in JSON
 	OperatingSystem    string    `json:"operating_system"`
 	Architecture       string    `json:"architecture"`
 	Provider           string    `json:"provider"`

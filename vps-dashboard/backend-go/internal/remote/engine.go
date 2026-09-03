@@ -267,20 +267,22 @@ func (e *Engine) collectOne(ctx context.Context, server models.Server) {
 			pm2JSON, _ := json.Marshal(discovery.PM2Processes)
 			dockerJSON, _ := json.Marshal(discovery.DockerContainers)
 			tunnelsJSON, _ := json.Marshal(discovery.SSHTunnels)
+			cloudflareJSON, _ := json.Marshal(discovery.CloudflareTunnels)
 			systemdJSON, _ := json.Marshal(discovery.SystemdServices)
 			portsJSON, _ := json.Marshal(discovery.ListeningPorts)
 
 			err := e.Discoveries.Upsert(ctx, models.ServerDiscovery{
-				ServerID:     server.ID,
-				PM2JSON:      string(pm2JSON),
-				DockerJSON:   string(dockerJSON),
-				TunnelsJSON:  string(tunnelsJSON),
-				SystemdJSON:  string(systemdJSON),
-				PortsJSON:    string(portsJSON),
-				Hostname:     discovery.Hostname,
-				Kernel:       discovery.Kernel,
-				OSName:       discovery.OSName,
-				DiscoveredAt: metric.Timestamp.Format(time.RFC3339),
+				ServerID:       server.ID,
+				PM2JSON:        string(pm2JSON),
+				DockerJSON:     string(dockerJSON),
+				TunnelsJSON:    string(tunnelsJSON),
+				CloudflareJSON: string(cloudflareJSON),
+				SystemdJSON:    string(systemdJSON),
+				PortsJSON:      string(portsJSON),
+				Hostname:       discovery.Hostname,
+				Kernel:         discovery.Kernel,
+				OSName:         discovery.OSName,
+				DiscoveredAt:   metric.Timestamp.Format(time.RFC3339),
 			})
 			if err != nil {
 				e.Logger.Warn().Err(err).Str("server", server.Name).Msg("remote.monitoring.discovery_save_failed")

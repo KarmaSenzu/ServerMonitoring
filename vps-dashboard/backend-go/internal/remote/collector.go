@@ -24,30 +24,31 @@ import (
 // coreutils/procps utilities available on any Linux/macOS system.
 // Output is key=value, one per line; lines without '=' are ignored.
 //
-// In addition to metrics, it also collects system info (OS, arch,
-// hostname) that is used to auto-populate the server registry.
-//
-// IMPORTANT: This script must NOT use `set -e` because some commands
-// may fail on certain systems (e.g., `free` not installed, /proc
-// not available on macOS). Each command has its own error handling.
-const metricsCommand = `# CPU usage
+// Robustness rules:
+//   - No `set -e` (a single failing metric must not kill the rest)
+//   - Every metric is guarded with a fallback value
+//   - Trailing `exit 0` so a partial collection still succeeds
+//   - Simple `echo` per line (no nested quote gymnastics)
+const metricsCommand = `# CPU usage (fallback to 0 on failure)
 idle=$(top -bn1 2>/dev/null | awk '/Cpu\(s\)/{print $8}' | head -1)
 if [ -z "$idle" ]; then idle=100; fi
-echo "cpu_usage=$(awk -v i="$idle" 'BEGIN{print 100-i}')
+cpu_usage=$(echo "100 $idle" | awk '{print $1-$2}')
+echo "cpu_usage=$cpu_usage"
 
 # Load averages
-echo "load1=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f1 || sysctl -n vm.loadavg 2>/dev/null | awk '{print $1}')"
-echo "load5=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f2 || sysctl -n vm.loadavg 2>/dev/null | awk '{print $2}')"
-echo "load15=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f3 || sysctl -n vm.loadavg 2>/dev/null | awk '{print $3}')"
+echo "load1=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f1 || echo 0)"
+echo "load5=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f2 || echo 0)"
+echo "load15=$(cat /proc/loadavg 2>/dev/null | cut -d' ' -f3 || echo 0)"
 
-# Memory
+# Memory (fallback to 0)
 free -b 2>/dev/null | awk '/Mem:/{print "mem_total="$2; print "mem_used="$3}'
-echo "mem_percent=$(free 2>/dev/null | awk '/Mem:/{if($2>0) printf "%.1f", $3/$2*100}')"
+mem_percent=$(free 2>/dev/null | awk '/Mem:/{if($2>0) printf "%.1f", $3/$2*100}')
+echo "mem_percent=${mem_percent:-0}"
 
 # Disk
 df -B1 / 2>/dev/null | awk 'NR==2{print "disk_total="$2; print "disk_used="$3; if($2>0) printf "disk_percent=%.1f\n", $3/$2*100}'
 
-# Network bytes
+# Network bytes (aggregate non-loopback)
 rx=0
 tx=0
 if [ -r /proc/net/dev ]; then
@@ -73,7 +74,9 @@ echo "uptime=$(cat /proc/uptime 2>/dev/null | cut -d' ' -f1 || echo 0)"
 echo "os_name=$(cat /etc/os-release 2>/dev/null | grep PRETTY_NAME | head -1 | cut -d'"' -f2 || uname -sr 2>/dev/null || echo '')"
 echo "architecture=$(uname -m 2>/dev/null || echo '')"
 echo "resolved_hostname=$(hostname 2>/dev/null || cat /etc/hostname 2>/dev/null || echo '')"
-echo "kernel=$(uname -r 2>/dev/null || echo '')"`
+echo "kernel=$(uname -r 2>/dev/null || echo '')"
+
+exit 0`
 
 // Collector gathers metrics from a single remote server.
 type Collector struct {

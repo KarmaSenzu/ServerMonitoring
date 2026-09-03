@@ -195,6 +195,14 @@ export default function AppLayout() {
 
           <span className="nav-section-label">System</span>
           <NavLink
+            to="/database"
+            className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+            onClick={closeSidebar}
+          >
+            <span className="nav-icon"><FiDatabase /></span>
+            Database
+          </NavLink>
+          <NavLink
             to="/backups"
             className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             onClick={closeSidebar}

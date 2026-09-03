@@ -20,6 +20,7 @@ import EventsPage from './pages/Events.jsx'
 import NotificationsPage from './pages/Notifications.jsx'
 import BackupsPage from './pages/Backups.jsx'
 import EnvironmentsPage from './pages/Environments.jsx'
+import DatabasePage from './pages/Database.jsx'
 import NotFoundPage from './pages/NotFound.jsx'
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/backups" element={<BackupsPage />} />
         <Route path="/environments" element={<EnvironmentsPage />} />
+        <Route path="/database" element={<DatabasePage />} />
         <Route path="/generator" element={<GeneratorPage />} />
         <Route
           path="/users"

@@ -266,6 +266,15 @@ export const servers = {
     getData(`/servers/${encodeURIComponent(id)}/history`, { limit }),
 }
 
+// Database backend management (SQLite/PostgreSQL/Supabase).
+// status/config are read; test/configure are admin-only.
+export const databaseApi = {
+  status: () => getData('/database/status'),
+  config: () => getData('/database/config'),
+  test: (payload) => request('post', '/database/test', payload).then(unwrap),
+  configure: (payload) => request('post', '/database/configure', payload).then(unwrap),
+}
+
 // Infrastructure Platform (Phase 2) — SSH engine.
 // Key metadata is safe for both roles; generation/upload/deletion and
 // test/command execution are admin-only surfaces.

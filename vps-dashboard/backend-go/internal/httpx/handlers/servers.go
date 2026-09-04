@@ -135,6 +135,7 @@ type serverPatchDTO struct {
 	SSHUsername        *string   `json:"ssh_username"`
 	CredentialType     *string   `json:"credential_type"`
 	CredentialRef      *string   `json:"credential_ref"`
+	CredentialPassword *string   `json:"credential_password"`
 	OperatingSystem    *string   `json:"operating_system"`
 	Architecture       *string   `json:"architecture"`
 	Provider           *string   `json:"provider"`
@@ -166,6 +167,25 @@ func (d serverPatchDTO) apply(s *models.Server) {
 	}
 	if d.CredentialRef != nil {
 		s.CredentialRef = *d.CredentialRef
+	}
+	if d.CredentialPassword != nil {
+		// Encrypt credential_password before storing (same as toServer).
+		// A non-empty value replaces the stored password; an empty value
+		// is ignored so the existing credential is preserved on partial
+		// PATCH updates (e.g. editing hostname without re-entering the
+		// password must not wipe the credential).
+		if pw := strings.TrimSpace(*d.CredentialPassword); pw != "" {
+			key := crypto.GetEncryptionKey()
+			if key != nil {
+				if encrypted, err := crypto.Encrypt(pw, key); err == nil {
+					s.CredentialPassword = encrypted
+				} else {
+					s.CredentialPassword = pw
+				}
+			} else {
+				s.CredentialPassword = pw
+			}
+		}
 	}
 	if d.OperatingSystem != nil {
 		s.OperatingSystem = *d.OperatingSystem

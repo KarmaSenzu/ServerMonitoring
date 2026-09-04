@@ -495,7 +495,7 @@ export default function ServersPage() {
           server={editing}
           onSubmit={async (payload) => {
             try {
-              await serversApi.update(editing.id, payload)
+              await serversApi.patch(editing.id, payload)
               toast.push({ type: 'success', message: 'Server updated' })
               invalidate()
               setEditing(null)
@@ -594,9 +594,10 @@ function ServerFormModal({ title, server, onSubmit, onClose, availableTags }) {
         ssh_port: Number(form.ssh_port) || 22,
         tags: form.tags,
       }
-      // Only send credential_password when type is password
-      // (don't send empty string for other credential types)
-      if (form.credential_type !== 'password') {
+      // Only send credential_password when type is password AND a new
+      // password was actually entered. Sending an empty string would wipe
+      // the existing credential on edit (partial PATCH must preserve it).
+      if (form.credential_type !== 'password' || !form.credential_password) {
         delete payload.credential_password
       }
       await onSubmit(payload)

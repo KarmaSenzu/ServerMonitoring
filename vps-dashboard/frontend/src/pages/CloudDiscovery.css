@@ -1,160 +1,526 @@
+/* === Cloud Discovery Page — Material Design 3 (Design.md layout) === */
+
 .cloud-page {
-  max-width: 1200px;
+  max-width: 1400px;
 }
 
-.cloud-summary {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.cloud-summary .summary-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  min-width: 110px;
-}
-
-.cloud-summary .chip-value {
-  font-size: 22px;
-  font-weight: 700;
-}
-
-.cloud-summary .chip-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
-}
-
-.cloud-summary .status-online .chip-value {
-  color: var(--success);
-}
-
-.cloud-providers {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.cloud-provider-section {
-  padding: 16px;
-  border-radius: 14px;
-}
-
-.cloud-provider-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-}
-
-.cloud-provider-header h3 {
-  margin: 0;
-  font-size: 15px;
-  text-transform: capitalize;
-}
-
-.cloud-instances {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 10px;
-}
-
-.cloud-instance-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.cloud-instance-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.cloud-instance-name {
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.cloud-state {
-  font-size: 10px;
-  text-transform: uppercase;
-  padding: 2px 8px;
+/* === HERO HEADER === */
+.cloud-hero {
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
   border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 
-.cloud-state.state-running {
-  background: var(--success-bg);
-  color: var(--success);
+.cloud-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.cloud-state.state-stopped {
-  background: var(--danger-bg);
-  color: var(--danger);
-}
-
-.cloud-instance-body {
-  padding: 8px 12px;
+.cloud-hero-left {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.cloud-meta-row {
+.cloud-hero-title-row {
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloud-hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e2e8;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.cloud-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: rgba(78, 222, 163, 0.12);
+  color: #4edea3;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cloud-hero-dot {
+  width: 6px;
+  height: 6px;
+  background: #4edea3;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.cloud-hero-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #ad887e;
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloud-hero-ok {
+  color: #4edea3;
+  font-family: 'Space Mono', monospace;
+}
+
+.dot-sep {
+  color: #5d4038;
+}
+
+.cloud-hero-actions {
+  display: flex;
   gap: 8px;
 }
 
-.cloud-meta-row .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
-  font-size: 11px;
-}
-
-.cloud-instance-actions {
-  padding: 8px 12px;
-  border-top: 1px solid var(--glass-border);
-}
-
-.cloud-instance-actions .primary {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
-}
-
-.cloud-instance-actions .primary:hover:not(:disabled) {
-  background: var(--accent-light);
-}
-
-.cloud-empty {
-  font-size: 13px;
-  padding: 8px 0;
-}
-
-.cloud-error {
-  color: var(--danger);
-  background: var(--danger-bg);
-  border-radius: 8px;
-  padding: 12px;
+.cloud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.cloud-btn.ghost {
+  background: #282a2e;
+  color: #e2e2e8;
+  border: 1px solid rgba(93, 64, 56, 0.25);
+}
+
+.cloud-btn.ghost:hover:not(:disabled) {
+  background: #333539;
+}
+
+.cloud-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === ALERT BANNER === */
+.cloud-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cloud-alert-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: #ff5625;
+}
+
+.cloud-alert-icon {
+  width: 32px;
+  height: 32px;
+  background: #282a2e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffb5a0;
+  flex-shrink: 0;
+  border-radius: 4px;
+}
+
+.cloud-alert-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cloud-alert-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cloud-alert-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e2e8;
+}
+
+.cloud-alert-action-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: #ff5625;
+  color: #fff;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cloud-alert-text {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #e7bdb2;
+  margin: 0;
+}
+
+/* === METRICS BAR (4-col) === */
+.cloud-metrics-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .cloud-metrics-bar { grid-template-columns: repeat(2, 1fr); }
+}
+
+.cloud-metric-card {
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.cloud-metric-card::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ff5625;
+  opacity: 0.6;
+}
+
+.cloud-metric-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #ad887e;
+  font-weight: 700;
+}
+
+.cloud-metric-value {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: #e2e2e8;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cloud-metric-value.green { color: #4edea3; }
+.cloud-metric-value.red { color: #ffb4ab; }
+
+/* === FILTER BAR === */
+.cloud-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.cloud-filter-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 240px;
+  color: #ad887e;
+}
+
+.cloud-filter-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e2e2e8;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  width: 100%;
+}
+
+.cloud-filter-input::placeholder {
+  color: #ad887e;
+}
+
+.cloud-filter-count {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: #ad887e;
+}
+
+/* === DISCOVERED ASSETS TABLE === */
+.cloud-assets-table-card {
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.cloud-assets-header {
+  padding-bottom: 12px;
+}
+
+.cloud-assets-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #4edea3;
+}
+
+.cloud-assets-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e2e2e8;
+}
+
+.cloud-assets-badge {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: rgba(78, 222, 163, 0.12);
+  color: #4edea3;
+  border-radius: 4px;
+}
+
+.cloud-assets-table-wrap {
+  overflow-x: auto;
+}
+
+.cloud-assets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+}
+
+.cloud-assets-table thead th {
+  background: rgba(12, 14, 18, 0.6);
+  color: #ad887e;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-align: left;
+}
+
+.cloud-assets-table tbody tr {
+  border-bottom: 1px solid rgba(93, 64, 56, 0.1);
+  transition: background 0.15s ease;
+}
+
+.cloud-assets-table tbody tr:hover {
+  background: rgba(40, 42, 46, 0.4);
+}
+
+.cloud-assets-table td {
+  padding: 10px;
+  color: #e7bdb2;
+}
+
+.text-right { text-align: right; }
+
+.cloud-asset-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloud-asset-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cloud-asset-dot.running { background: #4edea3; box-shadow: 0 0 6px rgba(78, 222, 163, 0.4); }
+.cloud-asset-dot.stopped { background: #ffb4ab; }
+.cloud-asset-dot.terminated { background: #ffb4ab; }
+.cloud-asset-dot.pending { background: #ffb95f; }
+.cloud-asset-dot.unknown { background: #ad887e; }
+
+.cloud-asset-name-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cloud-asset-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e2e2e8;
+}
+
+.cloud-asset-id {
+  font-size: 11px;
+  color: #ad887e;
+}
+
+.cloud-provider-name {
+  color: #ffb5a0;
+  font-weight: 700;
+}
+
+.cloud-asset-state {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cloud-asset-state.running { background: rgba(78, 222, 163, 0.12); color: #4edea3; }
+.cloud-asset-state.stopped { background: rgba(255, 180, 171, 0.12); color: #ffb4ab; }
+.cloud-asset-state.terminated { background: rgba(255, 180, 171, 0.12); color: #ffb4ab; }
+.cloud-asset-state.pending { background: rgba(255, 185, 95, 0.12); color: #ffb95f; }
+.cloud-asset-state.unknown { background: rgba(173, 136, 126, 0.12); color: #ad887e; }
+
+.cloud-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: #ff5625;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cloud-import-btn:hover {
+  background: #ffb5a0;
+  color: #601400;
+}
+
+/* === PROVIDER ERRORS === */
+.cloud-errors-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cloud-error-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(147, 0, 10, 0.15);
+  border: 1px solid rgba(147, 0, 10, 0.3);
+  border-radius: 6px;
+}
+
+.cloud-error-provider {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffb4ab;
+  flex-shrink: 0;
+}
+
+.cloud-error-msg {
+  font-size: 12px;
+  color: #ffb4ab;
   word-break: break-word;
 }
 
-.muted {
-  color: var(--text-muted);
+/* Utility */
+.muted { color: #ad887e; }
+.mono { font-family: 'Space Mono', monospace; }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 20px;
+  color: #ad887e;
 }
 
-.mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+.empty-state h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 16px;
+  color: #e7bdb2;
+  margin-bottom: 6px;
+}
+
+.empty-state p {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 24vh;
+  gap: 10px;
+  color: #ad887e;
+}
+
+.loading-state .spinning {
+  color: #ff5625;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

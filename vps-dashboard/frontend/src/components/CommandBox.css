@@ -24,7 +24,7 @@
 
 .command-text {
   flex: 1;
-  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 13px;
   line-height: 1.6;
   color: var(--success);
@@ -57,6 +57,6 @@
 
 .copy-btn.copied {
   background: var(--success-bg);
-  border-color: rgba(0, 230, 118, 0.3);
+  border-color: rgba(78, 222, 163, 0.3);
   color: var(--success);
 }

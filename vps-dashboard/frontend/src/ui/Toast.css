@@ -59,21 +59,21 @@
 }
 
 .toast-success {
-  border-color: rgba(0, 230, 118, 0.3);
+  border-color: rgba(78, 222, 163, 0.3);
 }
 .toast-success .toast-icon {
   color: var(--success);
 }
 
 .toast-error {
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(255, 180, 171, 0.3);
 }
 .toast-error .toast-icon {
   color: var(--danger);
 }
 
 .toast-warning {
-  border-color: rgba(255, 171, 64, 0.3);
+  border-color: rgba(255, 185, 95, 0.3);
 }
 .toast-warning .toast-icon {
   color: var(--warning);

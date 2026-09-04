@@ -151,25 +151,35 @@ export default function ServersPage() {
 
   return (
     <div className="servers-page">
-      <div className="page-header">
-        <div className="page-header-row">
-          <div>
-            <h1>Servers</h1>
-            <p>
-              Server Registry — the central identity of every managed host
+      {/* === HERO HEADER === */}
+      <div className="servers-hero">
+        <div className="servers-hero-top">
+          <div className="servers-hero-left">
+            <div className="servers-hero-title-row">
+              <h1 className="servers-hero-title">Server Registry</h1>
+              <span className="servers-live-badge">
+                <span className="servers-live-dot" />
+                {counts.online} NODES CONNECTED
+              </span>
+            </div>
+            <p className="servers-hero-subtitle">
+              <span>Central identity of every managed host</span>
+              <span className="dot-sep">•</span>
+              <span className="servers-hero-ok">{list.length} registered</span>
             </p>
           </div>
           {isAdmin && (
-            <button type="button" className="primary-btn" onClick={() => setCreating(true)}>
-              <FiPlus />
-              Add server
+            <button type="button" className="servers-add-btn" onClick={() => setCreating(true)}>
+              <FiPlus size={14} />
+              <span>+ Add Server</span>
             </button>
           )}
         </div>
       </div>
 
+      {/* === KPI METRICS BAR === */}
       <div className="servers-summary">
-        <div className={`summary-chip status-online`}>
+        <div className="summary-chip status-online">
           <span className="chip-value">{counts.online}</span>
           <span className="chip-label">Online</span>
         </div>

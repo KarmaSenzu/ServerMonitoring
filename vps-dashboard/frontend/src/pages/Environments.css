@@ -99,7 +99,7 @@
 .env-field dd {
   margin: 0;
   color: var(--text-primary);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .env-card .action-btn {

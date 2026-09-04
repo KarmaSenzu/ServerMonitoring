@@ -46,8 +46,8 @@ export default function AppLayout() {
         </button>
 
         <div className="top-nav-brand">
-          <div className="top-nav-brand-icon">◉</div>
-          <span className="top-nav-brand-text">Infrastructure Command Center</span>
+          <span className="top-nav-brand-text">Infrastructure<span className="brand-dot" /></span>
+          <span className="brand-tag">COMMAND CENTER</span>
         </div>
 
         <div className="top-nav-spacer" />
@@ -78,10 +78,10 @@ export default function AppLayout() {
       {/* Sidebar */}
       <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <div className="brand-icon">V</div>
+          <div className="brand-icon">◉</div>
           <div>
-            <h2>Command Center</h2>
-            <span className="brand-tag">Infrastructure Platform</span>
+            <h2>Infrastructure<span className="brand-dot" /></h2>
+            <span className="brand-tag">COMMAND CENTER</span>
           </div>
         </div>
 

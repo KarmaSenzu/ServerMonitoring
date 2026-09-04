@@ -68,18 +68,25 @@ export default function CommandsPage() {
 
   return (
     <div className="commands-page">
-      <div className="page-header">
-        <div className="page-header-row">
-          <div>
-            <h1>Commands</h1>
-            <p>
-              Reusable command snippets with multi-host execution, blast-radius preview, and audit
+      {/* === HERO HEADER === */}
+      <div className="commands-hero">
+        <div className="commands-hero-top">
+          <div className="commands-hero-left">
+            <div className="commands-hero-title-row">
+              <h1 className="commands-hero-title">SSH &amp; Fleet Commands</h1>
+              <span className="commands-live-badge">
+                <span className="commands-live-dot" />
+                E2E ENCRYPTED (ED25519)
+              </span>
+            </div>
+            <p className="commands-hero-subtitle">
+              Secure multi-session SSH terminal, credential vault, and broadcast execution engine across all managed nodes.
             </p>
           </div>
           {isAdmin && (
-            <button type="button" className="primary-btn" onClick={() => setCreating(true)}>
-              <FiPlus />
-              New snippet
+            <button type="button" className="commands-add-btn" onClick={() => setCreating(true)}>
+              <FiPlus size={14} />
+              <span>+ New Snippet</span>
             </button>
           )}
         </div>

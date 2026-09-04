@@ -47,7 +47,7 @@
   border-radius: 6px;
   background: var(--accent-glow);
   color: var(--accent-light);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .tunnel-started {
@@ -65,7 +65,7 @@
 }
 
 .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
   color: var(--text-secondary);
 }

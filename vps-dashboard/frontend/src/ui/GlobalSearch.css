@@ -29,7 +29,7 @@
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border);
   color: var(--text-muted);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .global-search-overlay {
@@ -131,7 +131,7 @@
 
 .search-result:hover,
 .search-result.highlighted {
-  background: rgba(0, 230, 118, 0.06);
+  background: rgba(78, 222, 163, 0.06);
   border-left-color: var(--accent);
 }
 
@@ -158,5 +158,5 @@
 }
 
 .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }

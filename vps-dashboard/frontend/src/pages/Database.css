@@ -21,7 +21,7 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: rgba(33, 150, 243, 0.12);
+  background: rgba(255, 86, 37, 0.12);
   color: var(--accent);
   display: flex;
   align-items: center;
@@ -40,7 +40,7 @@
 .db-conn-string {
   display: block;
   font-size: 12px;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Space Mono', monospace;
   color: var(--text-muted);
   background: rgba(0, 0, 0, 0.3);
   padding: 10px 12px;

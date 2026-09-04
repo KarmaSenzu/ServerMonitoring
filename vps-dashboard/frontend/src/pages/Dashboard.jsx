@@ -133,6 +133,13 @@ export default function Dashboard() {
     refetchInterval: 30000,
   })
 
+  const remoteHistoryQ = useQuery({
+    queryKey: ['server-history', selectedServerId],
+    queryFn: () => serversApi.history(selectedServerId, { limit: 60 }),
+    enabled: !!selectedServerId,
+    refetchInterval: 30000,
+  })
+
   const eventsQ = useQuery({
     queryKey: ['dashboard-events'],
     queryFn: () => events.list({ limit: 12 }),
@@ -208,27 +215,57 @@ export default function Dashboard() {
   ).length
 
   const cpuSeries = useMemo(() => {
-    const cpu = historyShortQ.data?.cpu
+    // When a remote server is selected, chart from its own history
+    // (so the chart reflects the selected device, not the local host).
+    const src = selectedServerId ? remoteHistoryQ.data : historyShortQ.data?.cpu
+    if (selectedServerId) {
+      const rows = Array.isArray(src) ? src : []
+      return rows.map((m) => ({ timestamp: m.ts, value: Number(m.cpu_usage ?? 0) }))
+    }
+    const cpu = src
     if (!Array.isArray(cpu)) return []
     return cpu.map((s) => ({ timestamp: s.timestamp, value: Number(s.usage_percent ?? 0) }))
-  }, [historyShortQ.data])
+  }, [selectedServerId, remoteHistoryQ.data, historyShortQ.data])
 
   const memSeries = useMemo(() => {
+    if (selectedServerId) {
+      const rows = Array.isArray(remoteHistoryQ.data) ? remoteHistoryQ.data : []
+      return rows.map((m) => ({ timestamp: m.ts, value: Number(m.mem_percent ?? 0) }))
+    }
     const mem = historyShortQ.data?.memory
     if (!Array.isArray(mem)) return []
     return mem.map((s) => ({ timestamp: s.timestamp, value: Number(s.used_percent ?? 0) }))
-  }, [historyShortQ.data])
+  }, [selectedServerId, remoteHistoryQ.data, historyShortQ.data])
 
   const diskSeries = useMemo(() => {
+    if (selectedServerId) {
+      const rows = Array.isArray(remoteHistoryQ.data) ? remoteHistoryQ.data : []
+      return rows.map((m) => ({ timestamp: m.ts, value: Number(m.disk_percent ?? 0) }))
+    }
     const disk = historyLongQ.data?.disk
     if (!Array.isArray(disk)) return []
     return disk.map((s) => ({ timestamp: s.timestamp, value: Number(s.used_percent ?? 0) }))
-  }, [historyLongQ.data])
+  }, [selectedServerId, remoteHistoryQ.data, historyLongQ.data])
 
-  const netSeries = useMemo(
-    () => computeNetRates(historyShortQ.data?.network),
-    [historyShortQ.data]
-  )
+  const netSeries = useMemo(() => {
+    if (selectedServerId) {
+      // Remote history carries net bytes at each sample; derive rates.
+      const rows = Array.isArray(remoteHistoryQ.data) ? remoteHistoryQ.data : []
+      const out = []
+      for (let i = 1; i < rows.length; i++) {
+        const cur = rows[i]
+        const prev = rows[i - 1]
+        const dt = Math.max(1, (new Date(cur.ts).getTime() - new Date(prev.ts).getTime()) / 1000)
+        out.push({
+          timestamp: cur.ts,
+          rx: Math.max(0, (cur.net_bytes_recv - prev.net_bytes_recv) / dt),
+          tx: Math.max(0, (cur.net_bytes_sent - prev.net_bytes_sent) / dt),
+        })
+      }
+      return out
+    }
+    return computeNetRates(historyShortQ.data?.network)
+  }, [selectedServerId, remoteHistoryQ.data, historyShortQ.data])
 
   const latestRates = netSeries.length > 0 ? netSeries[netSeries.length - 1] : null
 

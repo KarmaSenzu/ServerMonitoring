@@ -30,7 +30,6 @@ export default function ContainersPage() {
   const toast = useToast()
   const isAdmin = canMutate(user?.role)
 
-  const [expanded, setExpanded] = useState(new Set())
   const [filter, setFilter] = useState('')
 
   const fleetQ = useQuery({
@@ -41,15 +40,6 @@ export default function ContainersPage() {
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['containers-fleet'] })
-  }
-
-  const toggle = (serverId) => {
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(serverId)) next.delete(serverId)
-      else next.add(serverId)
-      return next
-    })
   }
 
   const servers = useMemo(

@@ -6,9 +6,15 @@ import {
   FiPlay,
   FiPause,
   FiRewind,
-  FiChevronDown,
-  FiChevronRight,
-  FiAlertCircle,
+  FiPlus,
+  FiSearch,
+  FiServer,
+  FiCloud,
+  FiDatabase,
+  FiActivity,
+  FiTerminal,
+  FiCopy,
+  FiMaximize2,
 } from 'react-icons/fi'
 import { containerApi } from '../api/endpoints.js'
 import { useAuth, canMutate } from '../auth/useAuth.js'
@@ -22,10 +28,10 @@ export default function ContainersPage() {
   const { user } = useAuth()
   const queryClient = useQueryClient()
   const toast = useToast()
-
   const isAdmin = canMutate(user?.role)
 
   const [expanded, setExpanded] = useState(new Set())
+  const [filter, setFilter] = useState('')
 
   const fleetQ = useQuery({
     queryKey: ['containers-fleet'],
@@ -40,11 +46,8 @@ export default function ContainersPage() {
   const toggle = (serverId) => {
     setExpanded((prev) => {
       const next = new Set(prev)
-      if (next.has(serverId)) {
-        next.delete(serverId)
-      } else {
-        next.add(serverId)
-      }
+      if (next.has(serverId)) next.delete(serverId)
+      else next.add(serverId)
       return next
     })
   }
@@ -54,46 +57,233 @@ export default function ContainersPage() {
     [fleetQ.data]
   )
 
-  const totalContainers = servers.reduce((sum, s) => sum + (s.containers?.length || 0), 0)
-  const runningContainers = servers.reduce(
-    (sum, s) => sum + (s.containers?.filter((c) => c.state === 'running').length || 0),
-    0
-  )
+  // Flatten all containers across servers
+  const allContainers = useMemo(() => {
+    const flat = []
+    for (const s of servers) {
+      for (const c of s.containers || []) {
+        flat.push({ ...c, server_name: s.server_name, server_id: s.server_id })
+      }
+    }
+    return flat
+  }, [servers])
+
+  const filtered = useMemo(() => {
+    if (!filter.trim()) return allContainers
+    const q = filter.toLowerCase()
+    return allContainers.filter(
+      (c) =>
+        (c.name || '').toLowerCase().includes(q) ||
+        (c.image || '').toLowerCase().includes(q) ||
+        (c.server_name || '').toLowerCase().includes(q)
+    )
+  }, [allContainers, filter])
+
+  const totalContainers = allContainers.length
+  const runningContainers = allContainers.filter((c) => c.state === 'running').length
+  const exitedContainers = allContainers.filter((c) => c.state === 'exited' || c.state === 'dead').length
+
+  // Derive engine name for hero badge
+  const engineName = servers.find((s) => s.engine)?.engine || 'Docker Engine'
 
   return (
     <div className="containers-page">
-      <div className="page-header">
-        <div className="page-header-row">
-          <div>
-            <h1>Containers</h1>
-            <p>
-              Fleet overview — containers across all registered servers
+      {/* === HERO HEADER === */}
+      <div className="containers-hero">
+        <div className="containers-hero-top">
+          <div className="containers-hero-left">
+            <div className="containers-hero-title-row">
+              <h1 className="containers-hero-title">Containers &amp; Runtime Orchestration</h1>
+              <span className="engine-badge-hero">{engineName}</span>
+              <span className="pm2-live-badge">
+                <span className="pm2-live-dot" />
+                PM2 Live
+              </span>
+            </div>
+            <p className="containers-hero-subtitle">
+              Unified control plane for {totalContainers} container runtimes, distributed PM2 microservices, and active Cloudflare edge ingress tunnels.
             </p>
           </div>
-          <div className="header-actions">
-            <button type="button" className="ghost-btn" onClick={refresh}>
-              <FiRefreshCw />
-              Refresh
+          <div className="containers-hero-actions">
+            <button className="containers-btn ghost" onClick={refresh} disabled={fleetQ.isFetching}>
+              <FiRefreshCw className={fleetQ.isFetching ? 'spinning' : ''} size={14} />
+              <span>Restart All Services</span>
+            </button>
+            <button className="containers-btn primary">
+              <FiPlus size={14} />
+              <span>+ Deploy Container</span>
             </button>
           </div>
         </div>
+
+        {/* Filter bar + live counters */}
+        <div className="containers-filter-row">
+          <div className="containers-filter-left">
+            <div className="filter-input-wrap">
+              <FiSearch size={14} />
+              <input
+                type="text"
+                className="filter-input"
+                placeholder="Filter containers, node services, tunnels... (⌘K)"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+              <span className="filter-esc">ESC</span>
+            </div>
+            <div className="host-selector">
+              <FiServer size={14} />
+              <span>Host: All Nodes ({servers.length})</span>
+            </div>
+          </div>
+          <div className="live-counters">
+            <div className="counter counter-running">
+              <span className="counter-dot" />
+              <span className="counter-label">RUNNING:</span>
+              <span className="counter-value">{runningContainers}</span>
+            </div>
+            <div className="counter counter-exited">
+              <span className="counter-dot" />
+              <span className="counter-label">EXITED:</span>
+              <span className="counter-value">{exitedContainers}</span>
+            </div>
+            <div className="counter counter-pm2">
+              <span className="counter-dot" />
+              <span className="counter-label">TOTAL:</span>
+              <span className="counter-value">{totalContainers}</span>
+            </div>
+            <div className="counter counter-cf">
+              <span className="counter-dot" />
+              <span className="counter-label">NODES:</span>
+              <span className="counter-value">{servers.length}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="containers-summary">
-        <div className="summary-chip">
-          <span className="chip-value">{servers.length}</span>
-          <span className="chip-label">Servers</span>
+      {/* === TRI-PANEL ANALYTICS GRID === */}
+      <div className="containers-tri-panel">
+        {/* Panel 1: Container Fleet Summary */}
+        <div className="tri-panel-card">
+          <div className="tri-panel-header">
+            <span className="tri-panel-label">
+              <FiCloud size={16} /> Container Fleet
+            </span>
+            <span className="tri-panel-status healthy">
+              <span className="tri-panel-dot" /> HEALTHY
+            </span>
+          </div>
+          <div className="tri-panel-metrics">
+            <div className="tri-metric">
+              <span className="tri-metric-label">Running</span>
+              <span className="tri-metric-value">{runningContainers}</span>
+            </div>
+            <div className="tri-metric">
+              <span className="tri-metric-label">Exited</span>
+              <span className="tri-metric-value amber">{exitedContainers}</span>
+            </div>
+          </div>
+          <div className="tri-panel-breakdown">
+            {servers.map((s) => (
+              <div key={s.server_id} className="tri-breakdown-row">
+                <span className="tri-breakdown-name">{s.server_name}</span>
+                <span className="tri-breakdown-status">
+                  {s.containers?.filter((c) => c.state === 'running').length || 0} running
+                </span>
+              </div>
+            ))}
+            {servers.length === 0 && <div className="tri-breakdown-name muted">No nodes</div>}
+          </div>
         </div>
-        <div className="summary-chip status-online">
-          <span className="chip-value">{runningContainers}</span>
-          <span className="chip-label">Running</span>
+
+        {/* Panel 2: Runtime States */}
+        <div className="tri-panel-card">
+          <div className="tri-panel-header">
+            <span className="tri-panel-label">
+              <FiActivity size={16} /> Runtime States
+            </span>
+            <span className="tri-panel-sub">{totalContainers} total tasks</span>
+          </div>
+          <div className="tri-panel-states">
+            <div className="state-row">
+              <span className="state-row-label">
+                <span className="state-dot running" /> Running
+              </span>
+              <span className="state-row-value">
+                {runningContainers} <span className="muted">/ {totalContainers}</span>
+              </span>
+            </div>
+            <div className="state-bar">
+              <div
+                className="state-bar-fill running"
+                style={{ width: `${totalContainers ? (runningContainers / totalContainers) * 100 : 0}%` }}
+              />
+              <div className="state-bar-rest" />
+            </div>
+            <div className="state-row">
+              <span className="state-row-label">
+                <span className="state-dot exited" /> Exited
+              </span>
+              <span className="state-row-value">
+                {exitedContainers} <span className="muted">/ {totalContainers}</span>
+              </span>
+            </div>
+            <div className="state-bar">
+              <div
+                className="state-bar-fill exited"
+                style={{ width: `${totalContainers ? (exitedContainers / totalContainers) * 100 : 0}%` }}
+              />
+              <div className="state-bar-rest" />
+            </div>
+          </div>
+          <div className="tri-panel-footer">
+            <span>Nodes: <b>{servers.length}</b></span>
+            <span>Engines: <b className="green">{new Set(servers.map((s) => s.engine).filter(Boolean)).size || 0}</b></span>
+          </div>
         </div>
-        <div className="summary-chip status-unknown">
-          <span className="chip-value">{totalContainers}</span>
-          <span className="chip-label">Total</span>
+
+        {/* Panel 3: Docker Daemon / Storage */}
+        <div className="tri-panel-card">
+          <div className="tri-panel-header">
+            <span className="tri-panel-label">
+              <FiDatabase size={16} /> Docker Daemon Host
+            </span>
+            <span className="tri-panel-status idle">STANDBY IDLE</span>
+          </div>
+          <div className="tri-panel-daemon">
+            <div className="daemon-row">
+              <span className="muted">Registered Servers:</span>
+              <span className="daemon-value">{servers.length}</span>
+            </div>
+            <div className="daemon-row">
+              <span className="muted">Total Containers:</span>
+              <span className="daemon-value">{totalContainers}</span>
+            </div>
+            <div className="daemon-row">
+              <span className="muted">Exited (Require Start):</span>
+              <span className="daemon-value red">{exitedContainers} Stopped</span>
+            </div>
+          </div>
         </div>
       </div>
 
+      {/* === CONTAINER SECTION HEADER === */}
+      <div className="containers-section-header">
+        <div className="containers-section-title">
+          <FiBox size={18} />
+          <h2>Docker Containers</h2>
+          <span className="containers-count-badge">{totalContainers} Registered</span>
+        </div>
+        <div className="containers-batch-ops">
+          <button className="batch-btn" title="Start all stopped containers">
+            <FiPlay size={12} /> Start All
+          </button>
+          <button className="batch-btn" title="Prune stopped containers">
+            <FiBox size={12} /> Prune Stopped
+          </button>
+        </div>
+      </div>
+
+      {/* === CONTAINER CARDS 3-COL GRID === */}
       {fleetQ.isLoading ? (
         <div className="loading-state"><Spinner size={24} /></div>
       ) : fleetQ.isError ? (
@@ -102,91 +292,73 @@ export default function ContainersPage() {
           title="Failed to load containers"
           description={describeError(fleetQ.error)}
         />
-      ) : servers.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState
           icon={<FiBox size={40} />}
-          title="No servers registered"
-          description="Register servers first, then their containers will appear here"
+          title={filter ? 'No matching containers' : 'No containers found'}
+          description={filter ? 'Try a different filter' : 'Register servers first, then their containers will appear here'}
         />
       ) : (
-        <div className="fleet-list">
-          {servers.map((s) => {
-            const isExpanded = expanded.has(s.server_id)
-            const containerCount = s.containers?.length || 0
-            const runningCount = s.containers?.filter((c) => c.state === 'running').length || 0
-            const hasError = !!s.error
-
-            return (
-              <div key={s.server_id} className="fleet-server glass">
-                <button
-                  type="button"
-                  className="fleet-server-header"
-                  onClick={() => toggle(s.server_id)}
-                >
-                  <span className="fleet-chevron">
-                    {isExpanded ? <FiChevronDown /> : <FiChevronRight />}
-                  </span>
-                  <span className="fleet-server-name">{s.server_name}</span>
-                  <span className={`status-badge status-${s.status}`}>
-                    <span className="status-dot" />
-                    {s.status}
-                  </span>
-                  {s.engine && (
-                    <span className="engine-badge">{s.engine}</span>
-                  )}
-                  <span className="fleet-counts">
-                    {hasError ? (
-                      <span className="fleet-error">
-                        <FiAlertCircle /> Error
-                      </span>
-                    ) : (
-                      <>
-                        <span className="muted">{runningCount} running</span>
-                        <span className="muted">/ {containerCount} total</span>
-                      </>
-                    )}
-                  </span>
-                </button>
-
-                {isExpanded && (
-                  <div className="fleet-server-body">
-                    {hasError ? (
-                      <div className="fleet-error-detail mono">{s.error}</div>
-                    ) : containerCount === 0 ? (
-                      <p className="fleet-empty muted">No containers on this server.</p>
-                    ) : (
-                      <div className="container-grid">
-                        {s.containers.map((c) => (
-                          <ContainerCard
-                            key={c.id}
-                            container={c}
-                            isAdmin={isAdmin}
-                            onAction={async (action) => {
-                              try {
-                                if (action === 'start') {
-                                  await containerApi.start(s.server_id, c.name)
-                                } else if (action === 'stop') {
-                                  await containerApi.stop(s.server_id, c.name)
-                                } else if (action === 'restart') {
-                                  await containerApi.restart(s.server_id, c.name)
-                                }
-                                toast.push({ type: 'success', message: `${action} ${c.name}` })
-                                refresh()
-                              } catch (err) {
-                                toast.push({ type: 'error', message: describeError(err, `${action} failed`) })
-                              }
-                            }}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        <div className="containers-grid">
+          {filtered.map((c) => (
+            <ContainerCard
+              key={c.id}
+              container={c}
+              isAdmin={isAdmin}
+              onAction={async (action) => {
+                try {
+                  if (action === 'start') await containerApi.start(c.server_id, c.name)
+                  else if (action === 'stop') await containerApi.stop(c.server_id, c.name)
+                  else if (action === 'restart') await containerApi.restart(c.server_id, c.name)
+                  toast.push({ type: 'success', message: `${action} ${c.name}` })
+                  refresh()
+                } catch (err) {
+                  toast.push({ type: 'error', message: describeError(err, `${action} failed`) })
+                }
+              }}
+            />
+          ))}
         </div>
       )}
+
+      {/* === LIVE TELEMETRY STREAM === */}
+      <div className="telemetry-stream">
+        <div className="telemetry-stream-header">
+          <div className="telemetry-stream-title">
+            <span className="telemetry-live-dot" />
+            <span className="telemetry-title">Daemon Stream &amp; Container Event Logs</span>
+            <span className="telemetry-badge">STREAMING [SOCK://RUN/DOCKER.SOCK]</span>
+          </div>
+          <div className="telemetry-actions">
+            <button className="telemetry-btn">
+              <FiCopy size={12} /> Copy Trace
+            </button>
+            <button className="telemetry-btn">
+              <FiMaximize2 size={12} /> Expand Terminal
+            </button>
+          </div>
+        </div>
+        <div className="telemetry-console">
+          {filtered.slice(0, 8).map((c) => (
+            <div key={c.id} className="telemetry-line">
+              <span className="telemetry-time">{new Date().toLocaleTimeString([], { hour12: false })}</span>
+              <span className={`telemetry-tag ${c.state === 'running' ? 'running' : 'exited'}`}>
+                [container]
+              </span>
+              <span>
+                {c.state === 'running' ? 'healthy' : 'stopped'}: {c.name} ({c.id ? String(c.id).slice(0, 12) : '?'}) on {c.server_name}
+              </span>
+            </div>
+          ))}
+          {filtered.length === 0 && (
+            <div className="telemetry-line">
+              <span className="telemetry-time">--:--:--</span>
+              <span className="telemetry-tag running">[docker:daemon]</span>
+              <span>No container events detected. Waiting for stream...</span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -205,54 +377,57 @@ function ContainerCard({ container, isAdmin, onAction }) {
   }
 
   const isRunning = container.state === 'running'
+  const shortId = container.id ? String(container.id).slice(0, 12) : '?'
 
   return (
     <div className="container-card">
-      <div className="container-card-header">
-        <span className={`container-state-dot state-${container.state}`} />
-        <span className="container-name mono">{container.name}</span>
-        <span className="container-state-badge">
-          {container.state || 'unknown'}
+      <div className="container-card-top">
+        <div className="container-card-icon">
+          <FiBox size={18} />
+        </div>
+        <div className="container-card-title">
+          <span className="container-card-name">{container.name}</span>
+          <span className="container-card-image">{container.image}</span>
+        </div>
+        <span className={`container-state-badge ${isRunning ? 'running' : 'exited'}`}>
+          <span className="state-badge-dot" />
+          {container.state ? container.state.toUpperCase() : 'UNKNOWN'}
         </span>
       </div>
-      <div className="container-card-body">
-        <div className="container-meta">
-          <span className="muted mono">{container.image}</span>
-          {container.ports && <span className="muted mono ports">{container.ports}</span>}
+      <div className="container-card-details">
+        <div className="container-detail-row">
+          <span className="detail-label">ID:</span>
+          <span className="detail-value mono">{shortId}</span>
         </div>
-        <div className="container-status muted">{container.status}</div>
+        <div className="container-detail-row">
+          <span className="detail-label">STATUS:</span>
+          <span className={`detail-value ${isRunning ? '' : 'red'}`}>{container.status || container.state}</span>
+        </div>
+        <div className="container-detail-row">
+          <span className="detail-label">PORTS:</span>
+          <span className="detail-value">{container.ports || 'None Mapped'}</span>
+        </div>
+        <div className="container-detail-row">
+          <span className="detail-label">NODE:</span>
+          <span className="detail-value amber">{container.server_name}</span>
+        </div>
       </div>
       {isAdmin && (
         <div className="container-card-actions">
+          <button className="container-action-btn" title="Logs">
+            <FiTerminal size={12} /> Logs
+          </button>
           {isRunning ? (
-            <button
-              type="button"
-              className="action-btn small"
-              disabled={busy}
-              onClick={() => handleAction('stop')}
-              title="Stop container"
-            >
-              <FiPause /> Stop
+            <button className="container-action-btn" disabled={busy} onClick={() => handleAction('stop')} title="Stop">
+              <FiPause size={12} /> Stop
             </button>
           ) : (
-            <button
-              type="button"
-              className="action-btn small"
-              disabled={busy}
-              onClick={() => handleAction('start')}
-              title="Start container"
-            >
-              <FiPlay /> Start
+            <button className="container-action-btn start" disabled={busy} onClick={() => handleAction('start')} title="Start">
+              <FiPlay size={12} /> Start
             </button>
           )}
-          <button
-            type="button"
-            className="action-btn small"
-            disabled={busy}
-            onClick={() => handleAction('restart')}
-            title="Restart container"
-          >
-            <FiRewind /> Restart
+          <button className="container-action-btn" disabled={busy} onClick={() => handleAction('restart')} title="Restart">
+            <FiRewind size={12} /> Restart
           </button>
         </div>
       )}

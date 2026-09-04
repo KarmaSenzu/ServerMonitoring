@@ -2,6 +2,110 @@
   max-width: 1400px;
 }
 
+/* === HERO HEADER === */
+.servers-hero {
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.servers-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.servers-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.servers-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.servers-hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e2e8;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.servers-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: rgba(78, 222, 163, 0.12);
+  color: #4edea3;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.servers-live-dot {
+  width: 6px;
+  height: 6px;
+  background: #4edea3;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.servers-hero-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #ad887e;
+  margin: 4px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.servers-hero-ok {
+  color: #4edea3;
+  font-family: 'Space Mono', monospace;
+}
+
+.dot-sep {
+  color: #5d4038;
+}
+
+.servers-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ff5625;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(255, 86, 37, 0.3);
+  transition: all 0.2s ease;
+}
+
+.servers-add-btn:hover {
+  background: #ffb5a0;
+  color: #601400;
+}
+
 /* === FIELD HELP TEXT (Add Server form descriptions) === */
 .field-help {
   font-family: 'Space Mono', monospace;

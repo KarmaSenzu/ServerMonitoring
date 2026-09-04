@@ -1,5 +1,96 @@
 .commands-page {
-  max-width: 1200px;
+  max-width: 1400px;
+}
+
+/* === HERO HEADER === */
+.commands-hero {
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.commands-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.commands-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.commands-hero-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.commands-hero-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #e2e2e8;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.commands-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  background: rgba(255, 86, 37, 0.12);
+  color: #ffb5a0;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.commands-live-dot {
+  width: 6px;
+  height: 6px;
+  background: #ff5625;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.commands-hero-subtitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  color: #e7bdb2;
+  margin: 4px 0 0;
+}
+
+.commands-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: #ff5625;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 12px rgba(255, 86, 37, 0.3);
+  transition: all 0.2s ease;
+}
+
+.commands-add-btn:hover {
+  background: #ffb5a0;
+  color: #601400;
 }
 
 .commands-list {
@@ -7,13 +98,13 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  border-radius: 14px;
+  border-radius: 6px;
 }
 
 .command-snippet-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 6px;
   padding: 16px;
   display: flex;
   flex-direction: column;

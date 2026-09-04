@@ -230,7 +230,7 @@
 
 .field-row dd {
   color: var(--text-secondary);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   margin: 0;
   text-align: right;
   word-break: break-all;
@@ -295,7 +295,7 @@
 }
 
 .project-card-actions .action-btn.danger:hover:not(:disabled) {
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(255, 180, 171, 0.3);
   color: var(--danger);
   background: var(--danger-bg);
 }
@@ -346,13 +346,13 @@
 .health-pill.ok {
   color: var(--success);
   background: var(--success-bg);
-  border-color: rgba(0, 230, 118, 0.3);
+  border-color: rgba(78, 222, 163, 0.3);
 }
 
 .health-pill.down {
   color: var(--danger);
   background: var(--danger-bg);
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(255, 180, 171, 0.3);
 }
 
 .health-pill.na {
@@ -466,7 +466,7 @@
   padding: 10px 12px;
   border-radius: 10px;
   background: var(--danger-bg);
-  border: 1px solid rgba(255, 82, 82, 0.3);
+  border: 1px solid rgba(255, 180, 171, 0.3);
   color: var(--danger);
   font-size: 13px;
 }
@@ -641,7 +641,7 @@
 }
 
 .drawer-mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
 }
 
@@ -740,7 +740,7 @@
 }
 
 .drawer-actions .action-btn.danger:hover:not(:disabled) {
-  border-color: rgba(255, 82, 82, 0.4);
+  border-color: rgba(255, 180, 171, 0.4);
   color: var(--danger);
   background: var(--danger-bg);
 }
@@ -804,7 +804,7 @@
 
 .modal-grid .form-group textarea.mono,
 .modal-grid .form-group input.mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
 }
 
@@ -881,8 +881,8 @@
   gap: 10px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 171, 64, 0.32);
-  background: rgba(255, 171, 64, 0.08);
+  border: 1px solid rgba(255, 185, 95, 0.32);
+  background: rgba(255, 185, 95, 0.08);
   color: var(--text-primary);
   font-size: 13px;
 }
@@ -894,8 +894,8 @@
 }
 
 .webhook-secret-banner {
-  border-color: rgba(255, 82, 82, 0.4);
-  background: rgba(255, 82, 82, 0.08);
+  border-color: rgba(255, 180, 171, 0.4);
+  background: rgba(255, 180, 171, 0.08);
 }
 
 .webhook-secret-banner svg {
@@ -915,7 +915,7 @@
 }
 
 .webhook-secret-value {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
   background: rgba(0, 0, 0, 0.4);
   padding: 8px 10px;
@@ -1049,7 +1049,7 @@
 }
 
 .deployments-trigger {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 11px;
   color: var(--text-secondary);
   max-width: 160px;
@@ -1060,7 +1060,7 @@
 
 .deployments-exit,
 .deployments-duration {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 11px;
   color: var(--text-secondary);
 }
@@ -1092,7 +1092,7 @@
 .deployment-error {
   padding: 8px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 82, 82, 0.3);
+  border: 1px solid rgba(255, 180, 171, 0.3);
   background: var(--danger-bg);
   color: var(--danger);
   font-size: 12px;
@@ -1112,7 +1112,7 @@
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--glass-border);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 11px;
   line-height: 1.5;
   color: var(--text-primary);

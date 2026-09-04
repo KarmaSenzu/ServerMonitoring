@@ -71,7 +71,7 @@
 }
 
 .snippet-command code {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 13px;
   color: var(--text-primary);
   white-space: pre-wrap;
@@ -90,7 +90,7 @@
   border-radius: 6px;
   background: var(--accent-glow);
   color: var(--accent-light);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .snippet-meta {
@@ -224,7 +224,7 @@
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 /* Results */
@@ -290,5 +290,5 @@
 }
 
 .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }

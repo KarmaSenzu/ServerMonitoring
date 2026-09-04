@@ -185,13 +185,13 @@
   background: var(--accent-glow);
   color: var(--accent-light);
   border: 1px solid rgba(108, 99, 255, 0.2);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .channel-chip.missing {
   background: var(--warning-bg);
   color: var(--warning);
-  border-color: rgba(255, 171, 64, 0.3);
+  border-color: rgba(255, 185, 95, 0.3);
 }
 
 .channel-card-actions,
@@ -228,7 +228,7 @@
 
 .channel-card-actions .action-btn.danger:hover:not(:disabled),
 .rule-card-actions .action-btn.danger:hover:not(:disabled) {
-  border-color: rgba(255, 82, 82, 0.4);
+  border-color: rgba(255, 180, 171, 0.4);
   color: var(--danger);
   background: var(--danger-bg);
 }
@@ -266,7 +266,7 @@
 
 .strip-error {
   color: var(--danger);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 11px;
   max-width: 100%;
   overflow: hidden;
@@ -334,7 +334,7 @@
   border-radius: 8px;
   background: var(--warning-bg);
   color: var(--warning);
-  border: 1px solid rgba(255, 171, 64, 0.3);
+  border: 1px solid rgba(255, 185, 95, 0.3);
   font-size: 13px;
 }
 

@@ -1,10 +1,12 @@
+/* === Containers Page — Material Design 3 (Design.md) === */
+
 .containers-page {
-  max-width: 1200px;
+  max-width: 1400px;
 }
 
 .containers-summary {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   margin-bottom: 16px;
   flex-wrap: wrap;
 }
@@ -12,109 +14,126 @@
 .containers-summary .summary-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #0c0e12;
+  border: 1px solid rgba(93, 64, 56, 0.25);
   min-width: 110px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .containers-summary .chip-value {
-  font-size: 22px;
+  font-family: 'Space Mono', monospace;
+  font-size: 20px;
   font-weight: 700;
   line-height: 1;
+  letter-spacing: -0.03em;
 }
 
 .containers-summary .chip-label {
-  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: #ad887e;
+  font-weight: 700;
 }
 
 .containers-summary .status-online .chip-value {
-  color: var(--success);
+  color: #4edea3;
 }
 
 .containers-summary .status-unknown .chip-value {
-  color: var(--text-muted);
+  color: #ad887e;
 }
 
+/* Fleet list */
 .fleet-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .fleet-server {
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 .fleet-server-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 10px;
+  padding: 12px 14px;
   width: 100%;
   background: none;
   border: none;
-  color: var(--text-primary);
+  color: #e2e2e8;
   cursor: pointer;
-  font-size: 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
   transition: background 0.15s ease;
 }
 
 .fleet-server-header:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(30, 32, 36, 0.5);
 }
 
 .fleet-chevron {
-  color: var(--text-muted);
+  color: #ad887e;
   display: flex;
   align-items: center;
 }
 
 .fleet-server-name {
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   flex: 1;
   text-align: left;
+  font-size: 14px;
 }
 
 .fleet-counts {
   display: flex;
   gap: 6px;
-  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
 }
 
 .fleet-error {
-  color: var(--danger);
+  color: #ffb4ab;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
 }
 
 .engine-badge {
+  font-family: 'Space Mono', monospace;
   font-size: 10px;
   padding: 2px 8px;
-  border-radius: 6px;
-  background: var(--accent-glow);
-  color: var(--accent-light);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  border-radius: 4px;
+  background: rgba(255, 86, 37, 0.12);
+  color: #ffb5a0;
   text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
 .fleet-server-body {
-  padding: 0 18px 16px;
+  padding: 0 14px 14px;
 }
 
 .fleet-error-detail {
-  color: var(--danger);
-  background: var(--danger-bg);
-  border-radius: 8px;
+  color: #ffb4ab;
+  background: rgba(147, 0, 10, 0.15);
+  border: 1px solid rgba(147, 0, 10, 0.3);
+  border-radius: 6px;
   padding: 12px;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
   word-break: break-word;
   white-space: pre-wrap;
@@ -122,20 +141,28 @@
 
 .fleet-empty {
   padding: 8px 0;
+  font-family: 'Space Mono', monospace;
   font-size: 13px;
 }
 
+/* Container grid — 3-col like Design.md */
 .container-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .container-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 8px;
   overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.container-card:hover {
+  background: #1e2024;
+  border-color: rgba(93, 64, 56, 0.4);
 }
 
 .container-card-header {
@@ -143,7 +170,7 @@
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid rgba(93, 64, 56, 0.2);
 }
 
 .container-state-dot {
@@ -154,23 +181,26 @@
 }
 
 .container-state-dot.state-running {
-  background: var(--success);
-  box-shadow: 0 0 6px var(--success);
+  background: #4edea3;
+  box-shadow: 0 0 6px rgba(78, 222, 163, 0.5);
 }
 
 .container-state-dot.state-exited,
 .container-state-dot.state-dead {
-  background: var(--danger);
+  background: #ffb4ab;
+  box-shadow: 0 0 6px rgba(255, 180, 171, 0.4);
 }
 
 .container-state-dot.state-paused,
 .container-state-dot.state-restarting {
-  background: var(--warning);
+  background: #ffb95f;
 }
 
 .container-name {
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 13px;
+  color: #e2e2e8;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -178,47 +208,53 @@
 }
 
 .container-state-badge {
+  font-family: 'Space Mono', monospace;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: #ad887e;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #0c0e12;
+  font-weight: 700;
 }
 
 .container-card-body {
-  padding: 8px 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .container-meta {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .container-meta .ports {
   font-size: 11px;
+  color: #ffb5a0;
+  font-weight: 600;
 }
 
 .container-status {
+  font-family: 'Space Mono', monospace;
   font-size: 11px;
 }
 
 .container-card-actions {
-  display: flex;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
   padding: 8px 12px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(93, 64, 56, 0.2);
 }
 
 .muted {
-  color: var(--text-muted);
+  color: #ad887e;
 }
 
 .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }

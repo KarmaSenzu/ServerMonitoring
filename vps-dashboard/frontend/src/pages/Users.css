@@ -52,7 +52,7 @@
 .user-date {
   color: var(--text-secondary);
   font-size: 12px;
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .actions-col {
@@ -82,7 +82,7 @@
 }
 
 .action-btn.small.danger:hover:not(:disabled) {
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(255, 180, 171, 0.3);
   color: var(--danger);
   background: var(--danger-bg);
 }

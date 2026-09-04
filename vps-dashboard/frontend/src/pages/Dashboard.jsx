@@ -158,6 +158,11 @@ export default function Dashboard() {
   const containersQ = useQuery({
     queryKey: ['docker', 'containers'],
     queryFn: docker.containers,
+    // Only poll local Docker when no remote server is selected.
+    // When a remote SSH server is chosen, the local /docker/containers
+    // endpoint would 503 (docker_unavailable) and spam the console —
+    // remote containers come from /servers/:id/discovery instead.
+    enabled: !selectedServerId,
     refetchInterval: 10000,
     retry: (count, err) => {
       // Don't retry on docker_unavailable; surface the state cleanly.
@@ -239,7 +244,11 @@ export default function Dashboard() {
     },
   })
 
-  const dockerUnavailable = containersQ.error?.code === 'docker_unavailable'
+  // Only consider docker unavailable when the local query actually ran
+  // and failed; when a remote server is selected the local query is
+  // disabled (enabled: !selectedServerId) and containersQ.error is
+  // undefined, so the banner would never show in that case.
+  const dockerUnavailable = !selectedServerId && containersQ.error?.code === 'docker_unavailable'
   const historyUnavailable =
     historyShortQ.error?.status === 503 || historyLongQ.error?.status === 503
 
@@ -269,6 +278,9 @@ export default function Dashboard() {
   }
 
   const stats = statsQ.data
+  // containersQ is disabled when a remote server is selected, so its
+  // data may be undefined. Guard with Array.isArray so .length/.map
+  // never throw "Cannot read properties of null".
   const containers = Array.isArray(containersQ.data) ? containersQ.data : []
   const tunnelList = Array.isArray(tunnelsQ.data) ? tunnelsQ.data : []
 
@@ -833,7 +845,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {dockerUnavailable ? (
+      {selectedServerId ? (
+        // When a remote server is selected, local Docker containers are
+        // not relevant — the remote server's containers are surfaced in
+        // the "Discovered Services" cards above via remoteDiscoveryQ.
+        // Render a small note instead of the (disabled) local query.
+        <div className="banner banner-info">
+          Local Docker containers are hidden while viewing a remote server.
+          Remote containers are shown in the “Discovered Services” section above.
+        </div>
+      ) : dockerUnavailable ? (
         <div className="banner banner-warning">
           Docker is not available on the server. Container actions are disabled.
         </div>

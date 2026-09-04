@@ -1,76 +1,105 @@
+/* === Cloud Discovery Page — Material Design 3 (Design.md) === */
+
 .cloud-page {
-  max-width: 1200px;
+  max-width: 1400px;
 }
 
 .cloud-summary {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 12px;
   margin-bottom: 16px;
-  flex-wrap: wrap;
 }
 
 .cloud-summary .summary-chip {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 18px;
-  border-radius: 12px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  min-width: 110px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.cloud-summary .summary-chip::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ff5625;
+  opacity: 0.6;
 }
 
 .cloud-summary .chip-value {
-  font-size: 22px;
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
   font-weight: 700;
+  color: #e2e2e8;
+  letter-spacing: -0.03em;
+  line-height: 1;
 }
 
 .cloud-summary .chip-label {
-  font-size: 11px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  color: #ad887e;
+  font-weight: 700;
 }
 
 .cloud-summary .status-online .chip-value {
-  color: var(--success);
+  color: #4edea3;
 }
 
 .cloud-providers {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .cloud-provider-section {
-  padding: 16px;
-  border-radius: 14px;
+  padding: 14px;
+  border-radius: 8px;
 }
 
 .cloud-provider-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .cloud-provider-header h3 {
   margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
   font-size: 15px;
   text-transform: capitalize;
+  color: #e2e2e8;
+  font-weight: 600;
 }
 
 .cloud-instances {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 10px;
 }
 
 .cloud-instance-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  border-radius: 10px;
+  background: #1a1c20;
+  border: 1px solid rgba(93, 64, 56, 0.2);
+  border-radius: 8px;
   overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.cloud-instance-card:hover {
+  background: #1e2024;
+  border-color: rgba(93, 64, 56, 0.4);
 }
 
 .cloud-instance-header {
@@ -78,83 +107,93 @@
   align-items: center;
   justify-content: space-between;
   padding: 10px 12px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid rgba(93, 64, 56, 0.2);
 }
 
 .cloud-instance-name {
+  font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
   font-size: 13px;
+  color: #e2e2e8;
 }
 
 .cloud-state {
+  font-family: 'Space Mono', monospace;
   font-size: 10px;
   text-transform: uppercase;
+  letter-spacing: 0.08em;
   padding: 2px 8px;
-  border-radius: 6px;
+  border-radius: 4px;
+  font-weight: 700;
 }
 
 .cloud-state.state-running {
-  background: var(--success-bg);
-  color: var(--success);
+  background: rgba(78, 222, 163, 0.12);
+  color: #4edea3;
 }
 
 .cloud-state.state-stopped {
-  background: var(--danger-bg);
-  color: var(--danger);
+  background: rgba(255, 180, 171, 0.12);
+  color: #ffb4ab;
 }
 
 .cloud-instance-body {
-  padding: 8px 12px;
+  padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .cloud-meta-row {
   display: flex;
   justify-content: space-between;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
   gap: 8px;
 }
 
 .cloud-meta-row .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
   font-size: 11px;
 }
 
 .cloud-instance-actions {
   padding: 8px 12px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid rgba(93, 64, 56, 0.2);
 }
 
 .cloud-instance-actions .primary {
-  background: var(--accent);
+  background: #ff5625;
   color: #fff;
-  border-color: var(--accent);
+  border-color: #ff5625;
 }
 
 .cloud-instance-actions .primary:hover:not(:disabled) {
-  background: var(--accent-light);
+  background: #ffb5a0;
+  color: #601400;
 }
 
 .cloud-empty {
+  font-family: 'Space Mono', monospace;
   font-size: 13px;
   padding: 8px 0;
+  color: #ad887e;
 }
 
 .cloud-error {
-  color: var(--danger);
-  background: var(--danger-bg);
-  border-radius: 8px;
+  color: #ffb4ab;
+  background: rgba(147, 0, 10, 0.15);
+  border: 1px solid rgba(147, 0, 10, 0.3);
+  border-radius: 6px;
   padding: 12px;
+  font-family: 'Space Mono', monospace;
   font-size: 12px;
   word-break: break-word;
 }
 
 .muted {
-  color: var(--text-muted);
+  color: #ad887e;
 }
 
 .mono {
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }

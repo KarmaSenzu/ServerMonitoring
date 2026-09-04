@@ -39,7 +39,7 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .terminal-status {

@@ -98,7 +98,7 @@
 .detail-value {
   font-size: 13px;
   color: var(--text-secondary);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .docker-card-actions {
@@ -134,13 +134,13 @@
 
 .action-btn.start:hover:not(:disabled) {
   background: var(--success-bg);
-  border-color: rgba(0, 230, 118, 0.3);
+  border-color: rgba(78, 222, 163, 0.3);
   color: var(--success);
 }
 
 .action-btn.stop:hover:not(:disabled) {
   background: var(--danger-bg);
-  border-color: rgba(255, 82, 82, 0.3);
+  border-color: rgba(255, 180, 171, 0.3);
   color: var(--danger);
 }
 
@@ -161,7 +161,7 @@
   align-items: center;
   gap: 4px;
   color: var(--accent-light);
-  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-family: 'Space Mono', monospace;
 }
 
 .docker-project-link:hover {

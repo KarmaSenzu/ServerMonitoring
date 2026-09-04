@@ -211,7 +211,9 @@ function ContainerCard({ container, isAdmin, onAction }) {
       <div className="container-card-header">
         <span className={`container-state-dot state-${container.state}`} />
         <span className="container-name mono">{container.name}</span>
-        <span className="container-state-badge">{container.state}</span>
+        <span className="container-state-badge">
+          {container.state || 'unknown'}
+        </span>
       </div>
       <div className="container-card-body">
         <div className="container-meta">
